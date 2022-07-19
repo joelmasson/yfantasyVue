@@ -4,7 +4,7 @@ import { RouteRecordRaw } from "vue-router";
 
 import axios from 'axios'
 
-// import { store } from '@/store'
+import  store  from './store'
 
 import DashboardRoute from "./routes";
 
@@ -20,5 +20,5 @@ const router = createRouter({
 
 const app = createApp(App)
 app.use(router)
-// app.use(store)
+app.use(store)
 app.mount('#app')

@@ -33,13 +33,5 @@ export default {
       this.$emit('selectedWeek', this.selectedWeek)
     }
   }
-  // watch: {
-  //   standings: {
-  //     immediate: true,
-  //     handler (standing, oldStandings) {
-  //       this.updateCurrentWeek(standing.current_week)
-  //     }
-  //   }
-  // }
 }
 </script>

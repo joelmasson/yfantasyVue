@@ -1,6 +1,6 @@
 import { createStore } from 'vuex'
 
-export const store = createStore({
+const store = createStore({
     actions: {
         // getLeagueData ({ commit, getters }, payload) {
         //   const data = getters.getYahooLeague
@@ -70,3 +70,5 @@ export const store = createStore({
         }
     }
 })
+
+export default store

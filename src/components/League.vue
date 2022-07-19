@@ -1,7 +1,7 @@
 <template>
   <div>
       <Standings :standings='league'></Standings>
-      <Matchups :matchups='matchups' :standings='league' @selectedWeek="updateSelectedWeek"></Matchups>
+      <Matchups v-if="matchups.length > 0" :matchups='matchups' :standings='league' @selectedWeek="updateSelectedWeek"></Matchups>
     </div>
 </template>
 <script>

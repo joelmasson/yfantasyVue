@@ -1,8 +1,8 @@
 <template>
-<div class="bg-white shadow-md rounded-lg">
-    <!-- <MatchupProjectionWeek v-if="settings !== undefined" :settings="settings" :team="team" :players="players" :schedule="games"></MatchupProjectionWeek> -->
-    <MatchupPlayer v-for="player in playerGames" :key="player.player.nhl_player_id" :player="player" :chosenStat="chosenStat"></MatchupPlayer>
-</div>
+  <div class="bg-white shadow-md rounded-lg">
+      <!-- <MatchupProjectionWeek :settings="settings" :team="team" :players="fullPlayers" :schedule="games"></MatchupProjectionWeek> -->
+      <MatchupPlayer v-for="player in fullPlayers" :key="player.player.nhl_player_id" :player="player" :chosenStat="chosenStat"></MatchupPlayer>
+  </div>
 </template>
 <script>
 import Axios from 'axios'
@@ -34,49 +34,51 @@ export default {
         Get all roster players and the days where they are starting from Yahoo
       ---- */
       let self = this
-      function getData () {
-        Axios.post('/api/yahoo/roster/players', {
-          team_key: self.$route.params.game_id + '.l.' + self.$route.params.league_id + '.t.' + self.team_id,
-          date: self.$route.params.week_num
-        }).then((response) => {
-          let roster = response.data.roster
-          self.team = roster
-          self.fullPlayers = self.players.map(player => {
-            let yPlayer = roster.filter(yPlayer => {
-              if (player.name === yPlayer.name.full) {
-                return yPlayer
-              }
-            })[0]
-            player.player_id = yPlayer.player_id
-            player.display_position = yPlayer.display_position
-            player.headshot = 'https://' + yPlayer.headshot.url.split('https://')[2]
-            player.eligible_positions = yPlayer.eligible_positions.toString()
-            player.editorial_team_abbr = yPlayer.editorial_team_abbr
-            player.selected_position = yPlayer.selected_position
-            player.rostered = []
-            return player
-          })
-          self.fullPlayers.forEach(fullPlayer => {
-            let rosterPlayer = roster.filter(player => {
-              if (fullPlayer.player_id === player.player_id) {
-                return player
-              }
-            })[0]
-            fullPlayer.rostered.push({position: rosterPlayer.selected_position, date: self.$route.params.week_num, opponentSOS: null})
-          })
-          // self.setPlayerGames()
-          //   self.findAvailableSpots()
-          //   self.$forceUpdate()
-        }).catch((error) => {
-          console.log(error)
+      // function getData () {
+      Axios.post('/api/yahoo/roster/players', {
+        team_key: self.$route.params.game_id + '.l.' + self.$route.params.league_id + '.t.' + self.team_id,
+        date: self.$route.params.week_num
+      }).then((response) => {
+        console.log(response)
+        let roster = response.data.roster
+        self.team = roster
+        self.fullPlayers = self.players.map(player => {
+          let yPlayer = roster.filter(yPlayer => {
+            if (player.name === yPlayer.name.full) {
+              return yPlayer
+            }
+          })[0]
+          player.player_id = yPlayer.player_id
+          player.display_position = yPlayer.display_position
+          player.headshot = 'https://' + yPlayer.headshot.url.split('https://')[2]
+          player.eligible_positions = yPlayer.eligible_positions.toString()
+          player.editorial_team_abbr = yPlayer.editorial_team_abbr
+          player.selected_position = yPlayer.selected_position
+          player.rostered = []
+          return player
         })
-      }
-      getData()
+        self.fullPlayers.forEach(fullPlayer => {
+          let rosterPlayer = roster.filter(player => {
+            if (fullPlayer.player_id === player.player_id) {
+              return player
+            }
+          })[0]
+          fullPlayer.rostered.push({position: rosterPlayer.selected_position, date: self.$route.params.week_num, opponentSOS: null})
+        })
+        // self.setPlayerGames()
+        //   self.findAvailableSpots()
+        //   self.$forceUpdate()
+      }).catch((error) => {
+        console.log(error)
+      })
+      // }
+      // getData()
     },
     getPlayers: function (query) {
       /* -----
         Get all roster players and thier stats
       ---- */
+      console.log('PLAYERS')
       function compare (a, b) {
         if (a.coverage_value < b.coverage_value) {
           return -1
@@ -93,7 +95,7 @@ export default {
         self.players = response.data.map(player => {
           let playbyplayGames = player.stats.filter(game => {
             let season = game.coverage_value.toString().substring(0, 4)
-            if (game.coverage_type === 'Game' && season === this.today.substring(0, 4)) {
+            if (game.coverage_type === 'Game') {
               return game
             }
           }).sort(compare)
@@ -108,7 +110,9 @@ export default {
           }
           return player
         })
-        // self.getRoster()
+        self.getRoster()
+      }).catch(error => {
+        console.log(error)
       })
     },
     findAvailableSpots: function () {
@@ -388,9 +392,10 @@ export default {
     }
   },
   mounted () {
-    this.getPlayers({'fantasyTeamId': this.$route.params.game_id + '.l.' + this.$route.params.league_id + '.t.' + this.$props.team_id})
-    this.getNHLSchedule()
-    this.getNHLStandings()
+    this.getRoster()
+    // this.getPlayers({'fantasyTeamId': this.$route.params.game_id + '.l.' + this.$route.params.league_id + '.t.' + this.$props.team_id})
+    // this.getNHLSchedule()
+    // this.getNHLStandings()
   }
 }
 </script>

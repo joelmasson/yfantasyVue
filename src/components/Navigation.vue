@@ -34,9 +34,9 @@
                 <div class="hidden sm:block sm:ml-6">
                 <div class="flex space-x-4">
                     <router-link :to="{ name: 'Dashboard'}" class="px-3 py-2 rounded-md text-sm font-medium text-white bg-gray-900">Dashboard</router-link>
-                    <!-- <router-link :to="{ path: '/api/login' }" class="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700">Login</router-link> -->
+                    <router-link :to="{ path: '/api/login' }" class="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700">Login</router-link>
                     <!-- <router-link :to="{ name: 'Login'}" v-on:click="logout">Logout</router-link> -->
-                    <Button v-on:click="login">Login</Button>
+                    <!-- <Button v-on:click="login">Login</Button> -->
                 </div>
                 </div>
             </div>

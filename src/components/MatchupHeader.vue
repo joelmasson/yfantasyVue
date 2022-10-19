@@ -13,7 +13,7 @@ export default {
   components: {
     TeamProfile
   },
-  props: ['matchup', 'settings'],
+  props: ['matchup', 'settings', 'schedule'],
   methods: {
     score: (teamID, matchup) => {
       let ID = teamID

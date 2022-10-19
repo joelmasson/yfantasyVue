@@ -1,44 +1,39 @@
-import { createStore } from 'vuex'
+import { defineStore } from 'pinia'
+import Axios from 'axios'
 
-const store = createStore({
+export const useStore = defineStore('main', {
     actions: {
         // getLeagueData ({ commit, getters }, payload) {
         //   const data = getters.getYahooLeague
         //   localStorage.setItem('league', state)
         // },
-        async getYahooLeague(context, payload) {
-            await Axios.post('/api/yahoo/leagues/fetch', {
-                league_keys: [
-                    payload.game_id + '.l.' + payload.league_id
-                ],
-                subresources: ['settings', 'standings', 'scoreboard'],
-                week: 2
-            }).then((response) => {
-                let league = response.data[0]
-                let data = {
-                    settings: league.settings,
-                    teams: league.standings.map(team => {
-                        return { name: team.name, team_id: team.team_id }
-                    }),
-                    league: league,
-                    league_keys: league
-                }
-                context.commit('setLeagueData', data)
-            }).catch((error) => {
-                console.log('error', error)
-            })
+        async getYahooLeague(game_id, league_id) {
+            if (Object.keys(this.league).length === 0) {
+                await Axios.post('/api/yahoo/leagues/fetch', {
+                    league_keys: [
+                        game_id + '.l.' + league_id
+                    ],
+                    subresources: ['settings', 'standings', 'scoreboard'],
+                    week: 2
+                }).then((response) => {
+                    this.league = response.data[0]
+                }).catch((error) => {
+                    console.log('error', error)
+                })
+            }
         },
         getStateData() {
             return localStorage.getItem('state')
         }
     },
-    state: {
-        positions: {},
+    state: () => ( {
+        settings: {},
         categories: {},
         teams: [],
         league: {},
-        league_keys: []
-    },
+        league_keys: [],
+        userTeamId: 13
+    }),
     getters: {
         getLeague: state => () => {
             return state.league
@@ -54,6 +49,15 @@ const store = createStore({
         },
         getPositions: state => () => {
             return state.positions
+        },
+        getMatch: state => (id) => {
+            return state.league.scoreboard.matchups.filter((match) => {
+                return match.teams.some((team) => {
+                    if (team.team_id === id) {
+                        return match
+                    }
+                })
+            })[0]
         }
     },
     mutations: {
@@ -70,5 +74,3 @@ const store = createStore({
         }
     }
 })
-
-export default store

@@ -1,15 +1,25 @@
 <template>
   <div>
-      <Standings :standings='league'></Standings>
+      <Standings :standings='this.store.league'></Standings>
       <Matchups v-if="matchups.length > 0" :matchups='matchups' :standings='league' @selectedWeek="updateSelectedWeek"></Matchups>
     </div>
 </template>
 <script>
 import Axios from 'axios'
+import { useRouter, useRoute } from 'vue-router'
+
+import { useStore } from '../stores/index.js'
+
 import Standings from './Standings.vue'
 import Matchups from './Matchups.vue'
 export default {
   name: 'League',
+  setup() {
+    const route = useRoute()
+    const store = useStore()
+    store.getYahooLeague(route.params.game_id, route.params.league_id)
+    return { store }
+  },
   data () {
     return {
       league: {
@@ -39,13 +49,13 @@ export default {
     Standings, Matchups
   },
   computed: {
-    league_abbr: function () {
-      return this.sports.filter(sport => {
-        if (sport.league === this.league.game_code) {
-          return sport
-        }
-      })[0].sport
-    }
+    // league_abbr: function () {
+    //   return this.sports.filter(sport => {
+    //     if (sport.league === this.league.game_code) {
+    //       return sport
+    //     }
+    //   })[0].sport
+    // }
   },
   methods: {
     getPastLeaugeKeys: function () {
@@ -66,31 +76,31 @@ export default {
           console.log('error', error)
         })
     },
-    getYahooLeague: function () {
-      let self = this
-      Axios.post('/api/yahoo/leagues/fetch', {
-        league_keys: [
-          this.$route.params.game_id + '.l.' + this.$route.params.league_id
-        ],
-        subresources: ['settings', 'standings', 'scoreboard', 'teams', 'transactions']
-      })
-        .then((response) => {
-          console.log(response)
-          if (!('error' in response)) {
-            self.league = response.data[0]
-            // self.matchups = response.data[0].scoreboard.matchups
-            self.updateSelectedWeek(response.data[0].current_week)
-            self.getPastLeaugeKeys()
-            self.updateStore()
-            self.getCurrentSeason()
-            self.getYahooOwnership()
-          }
-        })
-        .catch((error) => {
-          // self.updateStore()
-          console.log('error', error)
-        })
-    },
+    // getYahooLeague: function () {
+    //   let self = this
+    //   Axios.post('/api/yahoo/leagues/fetch', {
+    //     league_keys: [
+    //       this.$route.params.game_id + '.l.' + this.$route.params.league_id
+    //     ],
+    //     subresources: ['settings', 'standings', 'scoreboard', 'teams', 'transactions']
+    //   })
+    //     .then((response) => {
+    //       console.log(response)
+    //       if (!('error' in response)) {
+    //         self.league = response.data[0]
+    //         // self.matchups = response.data[0].scoreboard.matchups
+    //         // self.updateSelectedWeek(response.data[0].current_week)
+    //         // self.getPastLeaugeKeys()
+    //         self.updateStore()
+    //         // self.getCurrentSeason()
+    //         // self.getYahooOwnership()
+    //       }
+    //     })
+    //     .catch((error) => {
+    //       // self.updateStore()
+    //       console.log('error', error)
+    //     })
+    // },
     getCurrentExternalSeason: function () {
       let self = this
       let season = self.league.season + (parseInt(self.league.season) + 1)
@@ -106,7 +116,7 @@ export default {
     },
     getCurrentSeason: function () {
       let self = this
-      Axios.get('api/season/' + this.$route.params.game_id)
+      Axios.get('/api/season/' + this.$route.params.game_id)
         .then(response => {
           console.log(response)
           let today = new Date()
@@ -131,17 +141,25 @@ export default {
           console.log('error', error)
         })
     },
-    updateStore: function () {
-      let data = {
-        settings: this.league.settings,
-        teams: this.league.standings.map(team => {
-          return {name: team.name, team_id: team.team_id}
-        }),
-        league: this.league,
-        league_keys: this.league_keys
-      }
-      this.$store.commit('setLeagueData', data)
-    },
+    // updateStore: function () {
+    //   let data = {
+    //     settings: this.league.settings,
+    //     teams: this.league.standings.map(team => {
+    //       return {name: team.name, team_id: team.team_id}
+    //     }),
+    //     league: this.league,
+    //     league_keys: this.league_keys
+    //   }
+    //   store.$patch((state) => {
+    //     state.positions = leagueData.settings.roster_positions
+    //     state.categories = leagueData.settings.stat_categories
+    //     // state.modifiers = leagueData.settings.stat_modifiers
+    //     state.teams = leagueData.teams
+    //     state.league = leagueData.league
+    //     state.league_keys = leagueData.league_keys
+    //   })
+    //   this.$store.commit('setLeagueData', data)
+    // },
     saveSeason: function () {
       let self = this
       let seasonData = {
@@ -162,7 +180,7 @@ export default {
           }
         })
       }
-      Axios.post('api/season', {
+      Axios.post('/api/season', {
         data: seasonData
       }).then(response => {
         self.season = response.data
@@ -218,7 +236,7 @@ export default {
           }
         })
       }).flat()
-      Axios.post('api/playbyplay', {
+      Axios.post('/api/playbyplay', {
         action: 'add',
         data: games
       }).then(response => {
@@ -229,7 +247,7 @@ export default {
     },
     getSeasonPlayers: function () {
       let season = self.league.season + (parseInt(self.league.season) + 1)
-      Axios.get('api/players' + season)
+      Axios.get('/api/players' + season)
         .then(response => {
           console.log(response)
         }).catch((error) => {
@@ -240,7 +258,7 @@ export default {
       let teamKeys = this.league.teams.map(team => {
         return this.$route.params.game_id + '.l.' + this.$route.params.league_id + '.t.' + team.team_id
       })
-      Axios.post('api/yahoo/players/teams', {
+      Axios.post('/api/yahoo/players/teams', {
         team_key: teamKeys,
         subresources: ['ownership']
       }).then(response => {
@@ -256,7 +274,7 @@ export default {
     getMatchups: function (week) {
       let self = this
       console.log(this.$route.params.game_id + '.l.' + this.$route.params.league_id, week)
-      Axios.post('api/yahoo/league/scoreboard', {
+      Axios.post('/api/yahoo/league/scoreboard', {
         league_key: this.$route.params.game_id + '.l.' + this.$route.params.league_id,
         week: week
       }).then(response => {
@@ -267,7 +285,7 @@ export default {
       })
     },
     setFantasyOwnership: function (players) {
-      Axios.post('api/players', {
+      Axios.post('/api/players', {
         action: 'updateOwnership',
         players: players
       }).then(update => {
@@ -280,7 +298,7 @@ export default {
     }
   },
   mounted () {
-    this.getYahooLeague()
+    // this.getYahooLeague()
     // Check if the season data is saved
   }
 }

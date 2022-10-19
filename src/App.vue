@@ -6,12 +6,10 @@ import Header from './components/Header.vue';
 </script>
 
 <template>
-  <div id="app" class="bg-gray-100 font-sans">
-    <Navigation />
-    <!-- <Header /> -->
-    <div class="container mx-auto">
-      <router-view/>
-    </div>
+  <Navigation />
+  <Header />
+  <div class="container mx-auto">
+    <router-view/>
   </div>
 </template>
 

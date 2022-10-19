@@ -46,6 +46,7 @@
   </div>
 </template>
 <script>
+  import { useStore } from '../stores/index.js'
 import TeamHeader from './TeamHeader.vue'
 import FilterMenu from './FilterMenu.vue'
 import Player from './Player.vue'
@@ -53,6 +54,10 @@ import Axios from 'axios'
 
 export default {
   name: 'Team',
+  setup() {
+    const store = useStore()
+    return { store }
+  },
   data () {
     return {
       game_id: this.$route.params.game_id,
@@ -178,7 +183,7 @@ export default {
     roster: function () {
       let positions = Array.from(
         new Set(
-          this.$store.state.categories.map((category) => {
+          this.store.state.categories.map((category) => {
             return category.position_type
           })
         )

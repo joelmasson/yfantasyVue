@@ -8,10 +8,10 @@
         </span>
         <div class="flex items-center px-4 py-4">
           <div class="text-center">
-            <p class=" text-gray-900 group-hover:text-gray-100 text-sm transition-all duration-300">
+            <p class=" text-gray-100 group-hover:text-gray-100 text-sm transition-all duration-300">
               {{day.DOW}}
             </p>
-            <p class=" text-gray-900 group-hover:text-gray-100 mt-3 group-hover:font-bold transition-all duration-300 " >
+            <p class=" text-gray-100 group-hover:text-gray-100 mt-3 group-hover:font-bold transition-all duration-300 " >
               {{day.Num}}
             </p>
           </div>

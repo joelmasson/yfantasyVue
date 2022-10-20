@@ -1,12 +1,10 @@
 import { defineStore } from 'pinia'
+import { useStorage } from '@vueuse/core'
+
 import Axios from 'axios'
 
 export const useStore = defineStore('main', {
     actions: {
-        // getLeagueData ({ commit, getters }, payload) {
-        //   const data = getters.getYahooLeague
-        //   localStorage.setItem('league', state)
-        // },
         async getYahooLeague(game_id, league_id) {
             if (Object.keys(this.league).length === 0) {
                 await Axios.post('/api/yahoo/leagues/fetch', {
@@ -22,15 +20,12 @@ export const useStore = defineStore('main', {
                 })
             }
         },
-        getStateData() {
-            return localStorage.getItem('state')
-        }
     },
     state: () => ( {
         settings: {},
         categories: {},
         teams: [],
-        league: {},
+        league:  useStorage('league',{}),
         league_keys: [],
         userTeamId: 13
     }),

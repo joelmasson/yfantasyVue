@@ -34,11 +34,12 @@
         </thead>
         <tbody>
           <Player
-            v-for="player in player_type.players"
+            v-for="(player, index) in player_type.players"
             :key="player.player_id"
             :player="player"
             :team="team"
             :allCategories="false"
+            :projections="projections[index]"
           ></Player>
         </tbody>
       </table>
@@ -46,22 +47,28 @@
   </div>
 </template>
 <script>
+  import { useRouter, useRoute } from 'vue-router'
   import { useStore } from '../stores/index.js'
 import TeamHeader from './TeamHeader.vue'
 import FilterMenu from './FilterMenu.vue'
 import Player from './Player.vue'
 import Axios from 'axios'
 
+import getDailyProjection from '../services/sportsData'
+
 export default {
   name: 'Team',
   setup() {
+    const route = useRoute()
     const store = useStore()
-    return { store }
+    
+    return { store, route }
   },
   data () {
     return {
       game_id: this.$route.params.game_id,
       league_id: this.$route.params.league_id,
+      week_num: this.$route.params.week_num,
       team: [],
       players: [],
       projections: []
@@ -84,12 +91,12 @@ export default {
             '.t.' +
             self.team_id
         ],
-        date: self.$route.params.week_num
+        date: self.week_num
       })
         .then((response) => {
           self.team = response.data
           response.data.roster.forEach(player => {
-            self.getPlayerStats(player.player_key, self.$route.params.week_num)
+            self.getPlayerStats(player.player_key, self.week_num)
           })
         })
         .catch((error) => {
@@ -99,14 +106,19 @@ export default {
     getTeamPlayers: function () {
       let self = this
       Axios.post('/api/yahoo/players/teams', {
-        team_key: self.game_id + '.l.' + self.league_id + '.t.' + self.team_id,
-        date: self.$route.params.week_num
+        team_key: self.game_id + '.l.' + self.league_id + '.t.' + this.route.params.team_id,
+        subresources: ['stats']
       })
         .then((response) => {
-          self.team = response.data
-          response.data.roster.forEach(player => {
-            // self.getPlayerStats(player.player_key, self.$route.params.week_num)
+          self.team = response.data[0]
+          self.players = response.data[0].players
+          self.projections = response.data[0].players.map(player => {
+            return {
+              name: player.name.full,
+              projections: []
+            }
           })
+          this.getProjections()
         })
         .catch((error) => {
           console.log('error', error)
@@ -118,6 +130,7 @@ export default {
         player_key: key,
         week: week
       }).then((response) => {
+        console.log(response)
         let player = response.data
         let weekProjected = []
         let projectedStats = response.data.stats.stats
@@ -131,7 +144,7 @@ export default {
         weekProjected.forEach((day) => {
           for (const stat in day) {
             let formattedCategory = stat.replace('/', '')
-            if (self.$store.state.categories.some(category => {
+            if (store.state.categories.some(category => {
               if (category.name === formattedCategory) {
                 return true
               }
@@ -142,7 +155,7 @@ export default {
                 }
               })) {
               } else {
-                let id = self.$store.state.categories.filter(category => {
+                let id = store.state.categories.filter(category => {
                   if (category.name === formattedCategory) {
                     return category
                   }
@@ -169,13 +182,15 @@ export default {
     getProjections () {
       let self = this
       this.gameDays.forEach(date => {
-        Axios.get('https://api.sportsdata.io/v3/nhl/projections/json/PlayerGameProjectionStatsByDate/' + date + '?key=5e5eab28999741c59dc36c6c3beed615')
-          .then((response) => {
-            self.projections.push(response.data)
+        getDailyProjection(date).then((response) => {
+          response.forEach(player => {
+            self.projections.forEach(rostered => {   
+              if (rostered.name == player.Name) {
+                rostered.projections.push(player)
+              }
+            })
           })
-          .catch((error) => {
-            console.log(error)
-          })
+        })
       })
     }
   },
@@ -183,7 +198,7 @@ export default {
     roster: function () {
       let positions = Array.from(
         new Set(
-          this.store.state.categories.map((category) => {
+          this.store.league.settings.stat_categories.map((category) => {
             return category.position_type
           })
         )
@@ -199,7 +214,7 @@ export default {
           }
         })
       })
-      this.$store.state.categories.forEach((category) => {
+      this.store.league.settings.stat_categories.forEach((category) => {
         positionsObj.forEach((position) => {
           if (position.position_type === category.position_type) {
             position.stats.push(category)
@@ -215,7 +230,7 @@ export default {
       function convertDate (date) {
         var months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
         var yyyy = date.getFullYear().toString()
-        var mm = (date.getMonth() + 1).toString()
+        var mm = (date.getMonth()).toString()
         var dd = date.getDate().toString()
 
         var ddChars = dd.split('')
@@ -230,12 +245,12 @@ export default {
         }
         return arr
       };
-      return getDates(new Date(this.$store.state.league.scoreboard.matchups[0].week_start), new Date(this.$store.state.league.scoreboard.matchups[0].week_end))
+      return getDates(new Date(this.store.league.scoreboard.matchups[0].week_start), new Date(this.store.league.scoreboard.matchups[0].week_end))
     }
   },
   mounted () {
-    this.getRoster()
-    // this.getProjections()
+    // this.getRoster()
+    this.getTeamPlayers()
     // this.getPlayerStats('403.p.4681', 16)
   }
 }

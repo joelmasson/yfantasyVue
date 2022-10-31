@@ -9,14 +9,20 @@
     <td class="px-6 py-4 whitespace-nowrap">
       <Profile :type="'player'" :player="player" :team="$attrs.team"></Profile>
     </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+      Totals
+      <br/>
+      Projected
+    </td>
     <td class="px-6 py-4 whitespace-nowrap" v-for="stat in stats" :key="stat.stat_id">
-      {{stat.value}}
+      <span>{{stat.value}}</span>
+      <br/>
       {{projectedStat(stat.stat_id)}}
     </td>
   </tr>
 </template>
 <script>
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useStore } from '../stores/index.js'
 import {statIdToProjection} from '../utils/index'
 import Profile from './Profile.vue'
@@ -37,47 +43,12 @@ export default {
   },
   props: ['player', 'team', 'allCategories', 'projections'],
   computed: {
-    projectedStats: function () {
-
-      if (this.allCategories) {
-        let stats = []
-        // this.player.stats.forEach(category => {
-        //   let sat = this.player.stats.stats.some(stat => {
-        //     if (parseInt(category.stat_id) === parseInt(stat.stat_id)) {
-        //       stats.push(stat)
-        //       return stat
-        //     }
-        //   })
-        //   if (!sat) {
-        //     stats.push({value: '-'})
-        //   }
-        // })
-        return stats
-      } else {
-        let categories = this.store.league.settings.stat_categories.filter(stat => {
-          if (stat.position_type === this.player.position_type) {
-            return stat
-          }
-        }).map(category => {
-          let value = this.player.stats.stats.filter(stat => {
-            if (stat.stat_id === String(category.stat_id)) {
-              return stat
-            }
-          })[0]
-          if (value !== undefined) {
-            category.value = value.value
-          }
-          return category
-        })
-        return categories
-      }
-    }
   },
   methods: {
     projectedStat: function (stat_id) {
       let statName = statIdToProjection(stat_id)
       
-      let weekStat = this.projections.projections.map((stat) => {
+      let statValue = this.projections.projections.map((stat) => {
         if(Object.keys(stat).filter((key) => {key === statName})){
           if (stat[statName] === undefined){
             return 0
@@ -85,12 +56,9 @@ export default {
             return stat[statName]
           }
         }
-      }).reduce((curr, next) => curr + next)
-      return weekStat
+      }).reduce((curr, next) => curr + next, 0)
+      return Math.round((statValue + Number.EPSILON) * 100) / 100
     }
   },
-  mounted() {
-    // this.getPlayer()
-  }
 }
 </script>

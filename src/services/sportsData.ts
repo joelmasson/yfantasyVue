@@ -79,7 +79,6 @@ type GetPlayerResponse = {
     data: Player[];
 };
 
-
 export default async function getDailyProjection(date: string) {
     try {
         const { data, status } = await Axios.get<GetPlayerResponse>(

@@ -1,54 +1,37 @@
 export function statIdToProjection(category: string) {
-    switch (category) {
-        case '1':
-            return 'Goals'
-            break
-        case '2':
-            return 'Assists'
-            break
-        case '4':
-            return 'PlusMinus'
-            break
-        case '5':
-            return 'PenaltyMinutes'
-            break
-        case '8':
-            return 'PowerPlayPoints'
-            break
-        case '12':
-            return 'GameWinningGoals'
-            break
-        case '16':
-            return 'FaceoffsWon'
-            break
-        case '31':
-            return 'Hits'
-            break
-        case '32':
-            return 'Blocks'
-            break
-        case '19':
-            return 'GoaltendingWins'
-            break
-        case '22':
-            return 'GoaltendingGoalsAgainst'
-            break
-        case '23':
-            return 'GoaltendingGoalsAgainstAverage'
-            break
-        case '25':
-            return 'GoaltendingSaves'
-            break
-        case '24':
-            return 'GoaltendingShotsAgainst'
-            break
-        case '26':
-            return 'GoaltendingSavePercentage'
-            break
-        case '27':
-            return 'GoaltendingShutouts'
-            break
-        default:
-            break
-    }
+  switch (category) {
+    case "1":
+      return "Goals";
+    case "2":
+      return "Assists";
+    case "4":
+      return "PlusMinus";
+    case "5":
+      return "PenaltyMinutes";
+    case "8":
+      return "PowerPlayPoints";
+    case "12":
+      return "GameWinningGoals";
+    case "16":
+      return "FaceoffsWon";
+    case "31":
+      return "Hits";
+    case "32":
+      return "Blocks";
+    case "19":
+      return "GoaltendingWins";
+    case "22":
+      return "GoaltendingGoalsAgainst";
+    case "23":
+      return "GoaltendingGoalsAgainstAverage";
+    case "25":
+      return "GoaltendingSaves";
+    case "24":
+      return "GoaltendingShotsAgainst";
+    case "26":
+      return "GoaltendingSavePercentage";
+    case "27":
+      return "GoaltendingShutouts";
+    default:
+  }
 }

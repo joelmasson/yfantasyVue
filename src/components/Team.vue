@@ -25,11 +25,17 @@
             <th
               scope="col"
               class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               v-for="(category, i) in player_type.stats"
               :key="i"
             >
               {{ category.display_name }}
             </th>
+
           </tr>
         </thead>
         <tbody>
@@ -47,14 +53,15 @@
   </div>
 </template>
 <script>
-  import { useRouter, useRoute } from 'vue-router'
-  import { useStore } from '../stores/index.js'
+import { useRouter, useRoute } from 'vue-router'
+import { useStore } from '../stores/index.js'
 import TeamHeader from './TeamHeader.vue'
 import FilterMenu from './FilterMenu.vue'
 import Player from './Player.vue'
 import Axios from 'axios'
 
 import getDailyProjection from '../services/sportsData'
+import getPlayerAverages from '../services/apiData';
 
 export default {
   name: 'Team',
@@ -110,6 +117,7 @@ export default {
         subresources: ['stats']
       })
         .then((response) => {
+          console.log(response)
           self.team = response.data[0]
           self.players = response.data[0].players
           self.projections = response.data[0].players.map(player => {
@@ -179,6 +187,9 @@ export default {
         console.log(error)
       })
     },
+    getAdvancedStats() {
+
+    },
     getProjections () {
       let self = this
       this.gameDays.forEach(date => {
@@ -190,6 +201,16 @@ export default {
               }
             })
           })
+        })
+      })
+    },
+    getPlayerAverages () {
+      let self = this;
+      let playerNames = this.players.map(player => player.name.full)
+      getPlayerAverages(playerNames, 3).then(response => {
+        self.projections = self.projections.map(projected_player => {
+          let playerAverageStates = response.filter(player => {if(player.nhl_player_id === projected_player.nhl_player_id) return player})
+          return {player, ...playerAverageStates}
         })
       })
     }
@@ -249,9 +270,7 @@ export default {
     }
   },
   mounted () {
-    // this.getRoster()
     this.getTeamPlayers()
-    // this.getPlayerStats('403.p.4681', 16)
   }
 }
 </script>

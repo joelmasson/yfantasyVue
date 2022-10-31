@@ -33,22 +33,12 @@
                 </div>
                 <div class="hidden sm:block sm:ml-6">
                 <div class="flex space-x-4">
-                    <router-link :to="{ name: 'Dashboard'}" class="px-3 py-2 rounded-md text-sm font-medium text-white bg-gray-900">Dashboard</router-link>
-                    <router-link :to="{ path: '/api/login' }" class="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700">Login</router-link>
-                    <!-- <router-link :to="{ name: 'Login'}" v-on:click="logout">Logout</router-link> -->
+                    <!-- <router-link :to="{ name: 'League', game_id: $route.params.game_id}">League</router-link> -->
                     <!-- <Button v-on:click="login">Login</Button> -->
                 </div>
                 </div>
             </div>
             <div class="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-                <button class="bg-gray-800 p-1 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
-                <span class="sr-only">View notifications</span>
-                <!-- Heroicon name: bell -->
-                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                </button>
-
                 <!-- Profile dropdown -->
                 <div class="ml-3 relative">
                 <div>
@@ -68,9 +58,9 @@
                     To: "transform opacity-0 scale-95"
                 -->
                 <div class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5" role="menu" aria-orientation="vertical" aria-labelledby="user-menu">
-                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Your Profile</a>
-                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Settings</a>
+                    <router-link :to="{ name: 'Dashboard'}"  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Dashboard</router-link>
                     <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Sign out</a>
+                    <a href='/api/login' class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" >Login</a>
                 </div>
                 </div>
             </div>
@@ -93,52 +83,21 @@
     </nav>
 </template>
 <script>
-// import router from '../router'
+import { useRouter, useRoute } from 'vue-router'
+import { useStore } from '../stores/index.js'
 import axios from 'axios'
 export default {
   name: 'Login',
-  methods: {
-    login: (e) => {
-      e.preventDefault()
-      // let email = e.target.elements.email.value
-      // let password = e.target.elements.password.value
-      let login = () => {
-        // let data = {
-        //   email: email,
-        //   password: password
-        // }
-        axios
-          .post('/auth/yahoo')
-          .then((response) => {
-            console.log(response)
-            console.log('Logged in')
-            router.push('/dashboard')
-          })
-          .catch((errors) => {
-            console.log('Cannot log in', errors)
-          })
-      }
-      login()
-    },
-    logout: function (e) {
-      axios
-        .get('/api/logout')
-        .then(() => {
-          router.push('/')
-        })
-    },
-    ylogin: function (e) {
-      console.log(e)
-      axios
-        .get('/auth/yahoo')
-        .then((response) => {
-          console.log(response)
-          console.log('Logged in')
-          router.push('/dashboard')
-        })
-        .catch((errors) => {
-          console.log('Cannot log in')
-        })
+  setup() {
+    const route = useRoute()
+    const store = useStore()
+    
+    return { store, route }
+  },
+  computed: {
+    game_id () {
+      console.log(route)
+      return this.$route.params.game_id
     }
   }
 }

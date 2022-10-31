@@ -1,0 +1,207 @@
+import Axios from "axios";
+
+type Game = {
+  HIT: number;
+  ON_ICE_HIT: number;
+  HIT_AGAINST: number;
+  ON_ICE_HIT_AGAINST: number;
+  "5_ON_4_HIT": number;
+  "5_ON_4_ON_ICE_HIT": number;
+  "5_ON_4_HIT_AGAINST": number;
+  "5_ON_4_ON_ICE_HIT_AGAINST": number;
+  "5_ON_3_HIT": number;
+  "5_ON_3_ON_ICE_HIT": number;
+  "5_ON_3_HIT_AGAINST": number;
+  "5_ON_3_ON_ICE_HIT_AGAINST": number;
+  "4_ON_5_HIT": number;
+  "4_ON_5_ON_ICE_HIT": number;
+  "4_ON_5_HIT_AGAINST": number;
+  "4_ON_5_ON_ICE_HIT_AGAINST": number;
+  "3_ON_5_HIT": number;
+  "3_ON_5_ON_ICE_HIT": number;
+  "3_ON_5_HIT_AGAINST": number;
+  "3_ON_5_ON_ICE_HIT_AGAINST": number;
+  BLOCKED_SHOT: number;
+  ON_ICE_BLOCKED_SHOT: number;
+  SHOT_BLOCKED: number;
+  ON_ICE_SHOT_BLOCKED: number;
+  "5_ON_4_BLOCKED_SHOT": number;
+  "5_ON_4_ON_ICE_BLOCKED_SHOT": number;
+  "5_ON_4_SHOT_BLOCKED": number;
+  "5_ON_4_ON_ICE_SHOT_BLOCKED": number;
+  "5_ON_3_BLOCKED_SHOT": number;
+  "5_ON_3_ON_ICE_BLOCKED_SHOT": number;
+  "5_ON_3_SHOT_BLOCKED": number;
+  "5_ON_3_ON_ICE_SHOT_BLOCKED": number;
+  "4_ON_5_BLOCKED_SHOT": number;
+  "4_ON_5_ON_ICE_BLOCKED_SHOT": number;
+  "4_ON_5_SHOT_BLOCKED": number;
+  "4_ON_5_ON_ICE_SHOT_BLOCKED": number;
+  "3_ON_5_BLOCKED_SHOT": number;
+  "3_ON_5_ON_ICE_BLOCKED_SHOT": number;
+  "3_ON_5_SHOT_BLOCKED": number;
+  "3_ON_5_ON_ICE_SHOT_BLOCKED": number;
+  SHOT: number;
+  SHOT_MISSED: number;
+  ON_ICE_SHOT_MISSED: number;
+  ON_ICE_MISSED_SHOT: number;
+  "5_ON_4_SHOT": number;
+  "5_ON_4_SHOT_MISSED": number;
+  "5_ON_4_ON_ICE_SHOT_MISSED": number;
+  "5_ON_4_ON_ICE_MISSED_SHOT": number;
+  "5_ON_3_SHOT": number;
+  "5_ON_3_SHOT_MISSED": number;
+  "5_ON_3_ON_ICE_SHOT_MISSED": number;
+  "5_ON_3_ON_ICE_MISSED_SHOT": number;
+  "4_ON_5_SHOT": number;
+  "4_ON_5_SHOT_MISSED": number;
+  "4_ON_5_ON_ICE_SHOT_MISSED": number;
+  "4_ON_5_ON_ICE_MISSED_SHOT": number;
+  "3_ON_5_SHOT": number;
+  "3_ON_5_SHOT_MISSED": number;
+  "3_ON_5_ON_ICE_SHOT_MISSED": number;
+  "3_ON_5_ON_ICE_MISSED_SHOT": number;
+  ON_ICE_SHOT: number;
+  "5_ON_4_ON_ICE_SHOT": number;
+  "5_ON_3_ON_ICE_SHOT": number;
+  "4_ON_5_ON_ICE_SHOT": number;
+  "3_ON_5_ON_ICE_SHOT": number;
+  SAVE: number;
+  "5_ON_4_SAVE": number;
+  "5_ON_3_SAVE": number;
+  "4_ON_5_SAVE": number;
+  "3_ON_5_SAVE": number;
+  ON_ICE_SAVE: number;
+  "5_ON_4_ON_ICE_SAVE": number;
+  "5_ON_3_ON_ICE_SAVE": number;
+  "4_ON_5_ON_ICE_SAVE": number;
+  "3_ON_5_ON_ICE_SAVE": number;
+  FACEOFF_WIN: number;
+  ON_ICE_FACEOFF_WIN: number;
+  FACEOFF_LOSS: number;
+  ON_ICE_FACEOFF_LOSS: number;
+  "5_ON_4_FACEOFF_WIN": number;
+  "5_ON_4_ON_ICE_FACEOFF_WIN": number;
+  "5_ON_4_FACEOFF_LOSS": number;
+  "5_ON_4_ON_ICE_FACEOFF_LOSS": number;
+  "5_ON_3_FACEOFF_WIN": number;
+  "5_ON_3_ON_ICE_FACEOFF_WIN": number;
+  "5_ON_3_FACEOFF_LOSS": number;
+  "5_ON_3_ON_ICE_FACEOFF_LOSS": number;
+  "4_ON_5_FACEOFF_WIN": number;
+  "4_ON_5_ON_ICE_FACEOFF_WIN": number;
+  "4_ON_5_FACEOFF_LOSS": number;
+  "4_ON_5_ON_ICE_FACEOFF_LOSS": number;
+  "3_ON_5_FACEOFF_WIN": number;
+  "3_ON_5_ON_ICE_FACEOFF_WIN": number;
+  "3_ON_5_FACEOFF_LOSS": number;
+  "3_ON_5_ON_ICE_FACEOFF_LOSS": number;
+  PENALTY_AGAINST: number;
+  ON_ICE_PENALTY_AGAINST: number;
+  PENALTY_FOR: number;
+  ON_ICE_PENALTY_FOR: number;
+  "5_ON_4_PENALTY_AGAINST": number;
+  "5_ON_4_ON_ICE_PENALTY_AGAINST": number;
+  "5_ON_4_PENALTY_FOR": number;
+  "5_ON_4_ON_ICE_PENALTY_FOR": number;
+  "5_ON_3_PENALTY_AGAINST": number;
+  "5_ON_3_ON_ICE_PENALTY_AGAINST": number;
+  "5_ON_3_PENALTY_FOR": number;
+  "5_ON_3_ON_ICE_PENALTY_FOR": number;
+  GOAL: number;
+  "5_ON_4_GOAL": number;
+  "5_ON_3_GOAL": number;
+  "4_ON_5_GOAL": number;
+  "3_ON_5_GOAL": number;
+  ASSIST: number;
+  ASSIST_2: number;
+  "5_ON_4_ASSIST": number;
+  "5_ON_4_ASSIST_2": number;
+  ON_ICE_GOAL: number;
+  GOAL_ALLOWED: number;
+  ON_ICE_GOAL_ALLOWED: number;
+  "5_ON_4_ON_ICE_GOAL": number;
+  "5_ON_4_GOAL_ALLOWED": number;
+  "5_ON_4_ON_ICE_GOAL_ALLOWED": number;
+  "5_ON_3_ON_ICE_GOAL": number;
+  "5_ON_3_GOAL_ALLOWED": number;
+  "5_ON_3_ON_ICE_GOAL_ALLOWED": number;
+  "4_ON_5_ON_ICE_GOAL": number;
+  "4_ON_5_GOAL_ALLOWED": number;
+  "4_ON_5_ON_ICE_GOAL_ALLOWED": number;
+  "3_ON_5_ON_ICE_GOAL": number;
+  "3_ON_5_GOAL_ALLOWED": number;
+  "3_ON_5_ON_ICE_GOAL_ALLOWED": number;
+  TAKEAWAY: number;
+  ON_ICE_TAKEAWAY: number;
+  "5_ON_4_TAKEAWAY": number;
+  "5_ON_4_ON_ICE_TAKEAWAY": number;
+  "5_ON_3_TAKEAWAY": number;
+  "5_ON_3_ON_ICE_TAKEAWAY": number;
+  "4_ON_5_TAKEAWAY": number;
+  "4_ON_5_ON_ICE_TAKEAWAY": number;
+  "3_ON_5_TAKEAWAY": number;
+  "3_ON_5_ON_ICE_TAKEAWAY": number;
+  GIVEAWAY: number;
+  ON_ICE_GIVEAWAY: number;
+  "5_ON_4_GIVEAWAY": number;
+  "5_ON_4_ON_ICE_GIVEAWAY": number;
+  "5_ON_3_GIVEAWAY": number;
+  "5_ON_3_ON_ICE_GIVEAWAY": number;
+  "4_ON_5_GIVEAWAY": number;
+  "4_ON_5_ON_ICE_GIVEAWAY": number;
+  "3_ON_5_GIVEAWAY": number;
+  "3_ON_5_ON_ICE_GIVEAWAY": number;
+  ON_ICE_OFFSIDE: number;
+  ON_ICE_ICING: number;
+  ON_ICE_PUCK_OUT_OF_PLAY: number;
+  "5_ON_4_ON_ICE_OFFSIDE": number;
+  "5_ON_4_ON_ICE_ICING": number;
+  "5_ON_4_ON_ICE_PUCK_OUT_OF_PLAY": number;
+  "5_ON_3_ON_ICE_OFFSIDE": number;
+  "5_ON_3_ON_ICE_ICING": number;
+  "5_ON_3_ON_ICE_PUCK_OUT_OF_PLAY": number;
+  "4_ON_5_ON_ICE_OFFSIDE": number;
+  "4_ON_5_ON_ICE_ICING": number;
+  "4_ON_5_ON_ICE_PUCK_OUT_OF_PLAY": number;
+  "3_ON_5_ON_ICE_OFFSIDE": number;
+  "3_ON_5_ON_ICE_ICING": number;
+  "3_ON_5_ON_ICE_PUCK_OUT_OF_PLAY": number;
+  SHOOTOUT_GOAL: number;
+  SHOOTOUT_GOAL_ALLOWED: number;
+  SHOOTOUT_SHOT: number;
+  SHOOTOUT_SAVE: number;
+  SHOOTOUT_MISS: number;
+  SHOOTOUT_ON_ICE_MISS: number;
+  CORSI_FOR: number;
+  CORSI_AGAINST: number;
+  PLUS_MINUS: number;
+  GAME_SCORE: number;
+  TOI: number;
+};
+
+type GetPlayerProjection = {
+  data: Game[];
+};
+
+type names = [string]
+
+export default async function getPlayerAverages(playerNames: names, numberOfGames:number) {
+  try {
+    const { data, status } = await Axios.post<GetPlayerProjection>('api/projection', {
+        data: {player_names: playerNames},
+        limit: numberOfGames,
+      }
+    );
+    return data;
+  } catch (error) {
+    if (Axios.isAxiosError(error)) {
+      console.log("error message: ", error.message);
+      return error.message;
+    } else {
+      console.log("unexpected error: ", error);
+      return "An unexpected error occurred";
+    }
+    return error;
+  }
+}

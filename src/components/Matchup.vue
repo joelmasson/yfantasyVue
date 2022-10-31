@@ -1,14 +1,14 @@
 
 <template>
-    <section>
-        <MatchupHeader :matchup="getMatch" :settings="settings" :schedule="weeklySchedule"></MatchupHeader>
-        <Calender :dates="weeklySchedule"></Calender>
-        <!-- <SelectFilter :default="chosenStat" :label="'Sort by Stat'" :options="settings" @updateSelectFilter="updateFilter"></SelectFilter> -->
-        <!-- <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[0].team_id" :teams="proTeams" :settings="settings"></MatchupTeam>
+  <section>
+    <MatchupHeader :matchup="getMatch" :settings="settings" :schedule="weeklySchedule"></MatchupHeader>
+    <Calender :dates="weeklySchedule"></Calender>
+    <!-- <SelectFilter :default="chosenStat" :label="'Sort by Stat'" :options="settings" @updateSelectFilter="updateFilter"></SelectFilter> -->
+    <!-- <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[0].team_id" :teams="proTeams" :settings="settings"></MatchupTeam>
         <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[1].team_id" :teams="proTeams" :settings="settings"></MatchupTeam> -->
-        <!-- <p v-else>LOADING PLAY BY PLAY DATA...</p> -->
-        <!-- <Team v-for="team in getMatch.teams" :key="team.team_id" :teamID="team.team_id" :projections="projections"></Team> -->
-    </section>
+    <!-- <p v-else>LOADING PLAY BY PLAY DATA...</p> -->
+    <!-- <Team v-for="team in getMatch.teams" :key="team.team_id" :teamID="team.team_id" :projections="projections"></Team> -->
+  </section>
 </template>
 <script>
 import Calender from './calender/calender.vue'
@@ -26,7 +26,7 @@ export default {
   components: {
     MatchupHeader, TeamProfile, Team, Calender, MatchupTeam, SelectFilter
   },
-  data () {
+  data() {
     return {
       settings: this.$store.state.categories,
       defaultStat: this.$store.state.categories[0],
@@ -96,11 +96,11 @@ export default {
     }
   },
   computed: {
-    getMatch () {
+    getMatch() {
       let homeId = this.$route.params.matchup.split('-')[0]
       return this.$store.getters.getMatch(homeId)
     },
-    weeklySchedule () {
+    weeklySchedule() {
       let end = new Date(this.getMatch.week_end + 'T00:00:00.000-04:00')
       end = new Date(end.setDate(end.getDate() + 1))
       let start = new Date(this.getMatch.week_start + 'T00:00:00.000-05:00')
@@ -125,7 +125,7 @@ export default {
       return dates
     }
   },
-  mounted () {
+  mounted() {
     this.getProTeams()
     this.$store.dispatch('getStateData')
   }

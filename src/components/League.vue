@@ -18,7 +18,7 @@ export default {
     const route = useRoute()
     const store = useStore()
     store.getYahooLeague(route.params.game_id, route.params.league_id)
-    return { store }
+    return { store, route }
   },
   data () {
     return {
@@ -103,7 +103,7 @@ export default {
     // },
     getCurrentExternalSeason: function () {
       let self = this
-      let season = self.league.season + (parseInt(self.league.season) + 1)
+      let season = this.store.league.season + (parseInt(this.store.league.season) + 1)
       Axios.get('https://statsapi.web.nhl.com/api/v1/schedule?season=' + season)
         .then(response => {
           console.log(response.data)
@@ -116,7 +116,7 @@ export default {
     },
     getCurrentSeason: function () {
       let self = this
-      Axios.get('/api/season/' + this.$route.params.game_id)
+      Axios.get('/api/season/' + this.route.params.game_id)
         .then(response => {
           console.log(response)
           let today = new Date()
@@ -298,7 +298,7 @@ export default {
     }
   },
   mounted () {
-    // this.getYahooLeague()
+    this.getCurrentSeason()
     // Check if the season data is saved
   }
 }

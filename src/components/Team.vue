@@ -78,7 +78,7 @@ export default {
       week_num: this.$route.params.week_num,
       team: [],
       players: [],
-      projections: []
+      projections: [],
     }
   },
   props: ['teamID'],

@@ -24,7 +24,7 @@
 <script>
 import { useRoute } from 'vue-router'
 import { useStore } from '../stores/index.js'
-import {statIdToProjection} from '../utils/index'
+import { statIdToProjection } from '../utils/index'
 import Profile from './Profile.vue'
 export default {
   name: 'Player',

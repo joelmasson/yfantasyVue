@@ -6,14 +6,14 @@ import Axios from 'axios'
 export const useStore = defineStore('main', {
     actions: {
         async getYahooLeague(game_id, league_id) {
-            if (Object.keys(this.league).length === 0) {
+            if (new Date(this.league.edit_key) < new Date()) {
                 await Axios.post('/api/yahoo/leagues/fetch', {
                     league_keys: [
                         game_id + '.l.' + league_id
                     ],
-                    subresources: ['settings', 'standings', 'scoreboard'],
-                    week: 2
+                    subresources: ['settings', 'standings', 'scoreboard']
                 }).then((response) => {
+                    console.log(response)
                     this.league = response.data[0]
                 }).catch((error) => {
                     console.log('error', error)
@@ -22,12 +22,7 @@ export const useStore = defineStore('main', {
         },
     },
     state: () => ( {
-        settings: {},
-        categories: {},
-        teams: [],
         league:  useStorage('league',{}),
-        league_keys: [],
-        userTeamId: 13
     }),
     getters: {
         getLeague: state => () => {

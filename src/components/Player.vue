@@ -13,52 +13,53 @@
       Totals
       <br/>
       Projected
+      <br />
+      Averaged
     </td>
-    <td class="px-6 py-4 whitespace-nowrap" v-for="stat in stats" :key="stat.stat_id">
+    <td class="px-6 py-4 whitespace-nowrap" v-for="stat in statLine" :key="stat.stat_id">
       <span>{{stat.value}}</span>
       <br/>
-      {{projectedStat(stat.stat_id)}}
+      {{stat.projected}}
     </td>
   </tr>
 </template>
 <script>
-import { useRoute } from 'vue-router'
 import { useStore } from '../stores/index.js'
 import { statIdToProjection } from '../utils/index'
 import Profile from './Profile.vue'
 export default {
   name: 'Player',
   setup() {
-    const route = useRoute()
     const store = useStore()
     return { store }
   },
   components: {
     Profile
   },
-  data() {
-    return {
-      stats: this.player.stats.stats
-    }
-  },
-  props: ['player', 'team', 'allCategories', 'projections'],
+  props: ['player', 'team', 'allCategories'],
   computed: {
-  },
-  methods: {
-    projectedStat: function (stat_id) {
-      let statName = statIdToProjection(stat_id)
-      
-      let statValue = this.projections.projections.map((stat) => {
-        if(Object.keys(stat).filter((key) => {key === statName})){
-          if (stat[statName] === undefined){
-            return 0
-          } else {
+    statLine: function () {
+      let self = this
+      return this.player.stats.stats.map(scoringStat => {
+        let statName = statIdToProjection(scoringStat.stat_id)
+        let statValue = self.player.projections.map((stat) => {
+          if(Object.keys(stat).filter((key) => {key === statName})){
+            if (stat[statName] === undefined){
+              return 0
+            }
             return stat[statName]
           }
+        }).reduce((curr, next) => curr + next, 0)
+        if (statName === 'GoaltendingGoalsAgainstAverage' || statName === 'GoaltendingSavePercentage'){
+          // Divide by number of games
+          statValue = statValue / self.player.projections.length
         }
-      }).reduce((curr, next) => curr + next, 0)
-      return Math.round((statValue + Number.EPSILON) * 100) / 100
+        let statValueRounded = Math.round((statValue + Number.EPSILON) * 100) / 100
+        return {...scoringStat, projected:statValueRounded}
+      })
     }
+  },
+  methods: {
   },
 }
 </script>

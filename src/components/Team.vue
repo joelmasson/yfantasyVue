@@ -1,52 +1,61 @@
 <template>
   <div>
-    <div
-      class="bg-white shadow overflow-scroll sm:rounded-lg mb-10"
-      v-for="(player_type, i) in roster"
-      :key="i"
-    >
-      <!-- <TeamHeader :team="team" ></TeamHeader> -->
-      <!-- <FilterMenu></FilterMenu> -->
+    <div class="bg-white shadow overflow-scroll sm:rounded-lg mb-10">
       <table class="min-w-full divide-y divide-gray-200" x-max="1">
         <thead>
           <tr>
-            <th
-              scope="col"
+            <th scope="col"
               class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Pos
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Type
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              v-for="(category, i) in player_type.stats"
-              :key="i"
-            >
+              v-for="(category, i) in projectionsTotals" :key="i">
               {{ category.display_name }}
             </th>
-
           </tr>
         </thead>
         <tbody>
-          <Player
+          <tr>
+            <td v-for="(stat, i) in projectionsTotals" :key="i">
+              {{ stat.value.toFixed(2) }}
+            </td>
+          </tr>
+          <!-- <Player
             v-for="(player, index) in player_type.players"
             :key="player.player_id"
             :player="player"
             :team="team"
             :allCategories="false"
             :projections="projections[index]"
-          ></Player>
+          ></Player> -->
+        </tbody>
+      </table>
+    </div>
+    <div class="bg-white shadow overflow-scroll sm:rounded-lg mb-10" v-for="(player_type, i) in roster" :key="i">
+      <!-- <TeamHeader :team="team" ></TeamHeader> -->
+      <!-- <FilterMenu></FilterMenu> -->
+      <table class="min-w-full divide-y divide-gray-200" x-max="1">
+        <thead>
+          <tr>
+            <th scope="col"
+              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Pos
+            </th>
+            <th scope="col"
+              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Type
+            </th>
+            <th scope="col"
+              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            </th>
+            <th scope="col"
+              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              v-for="(category, i) in player_type.stats" :key="i">
+              {{ category.display_name }}
+            </th>
+
+          </tr>
+        </thead>
+        <tbody>
+          <Player v-for="(player) in player_type.players" :key="player.player_id" :player="player" :team="team"
+            :allCategories="false"></Player>
         </tbody>
       </table>
     </div>
@@ -55,6 +64,8 @@
 <script>
 import { useRouter, useRoute } from 'vue-router'
 import { useStore } from '../stores/index.js'
+import { statIdToProjection } from '../utils/index'
+
 import TeamHeader from './TeamHeader.vue'
 import FilterMenu from './FilterMenu.vue'
 import Player from './Player.vue'
@@ -68,17 +79,17 @@ export default {
   setup() {
     const route = useRoute()
     const store = useStore()
-    
     return { store, route }
   },
-  data () {
+  data() {
     return {
       game_id: this.$route.params.game_id,
       league_id: this.$route.params.league_id,
       week_num: this.$route.params.week_num,
       team: [],
       players: [],
-      projections: [],
+      projectionsTotals: {},
+      averages: []
     }
   },
   props: ['teamID'],
@@ -88,129 +99,111 @@ export default {
     Player
   },
   methods: {
-    getRoster: function () {
-      let self = this
-      Axios.post('/api/yahoo/roster/players', {
-        team_key: [
-          self.game_id +
-            '.l.' +
-            self.league_id +
-            '.t.' +
-            self.team_id
-        ],
-        date: self.week_num
-      })
-        .then((response) => {
-          self.team = response.data
-          response.data.roster.forEach(player => {
-            self.getPlayerStats(player.player_key, self.week_num)
-          })
-        })
-        .catch((error) => {
-          console.log('error', error)
-        })
-    },
     getTeamPlayers: function () {
       let self = this
       Axios.post('/api/yahoo/players/teams', {
-        team_key: self.game_id + '.l.' + self.league_id + '.t.' + this.route.params.team_id,
+        team_key: self.game_id + '.l.' + self.league_id + '.t.' + self.team_id,
         subresources: ['stats']
       })
         .then((response) => {
           console.log(response)
           self.team = response.data[0]
-          self.players = response.data[0].players
-          self.projections = response.data[0].players.map(player => {
+          self.players = response.data[0].players.map(player => {
             return {
-              name: player.name.full,
-              projections: []
+              ...player,
+              projections: [],
+              averages: []
             }
           })
           this.getProjections()
+          this.playerAverages()
         })
         .catch((error) => {
           console.log('error', error)
         })
     },
-    getPlayerStats: function (key, week) {
+    getProjections() {
       let self = this
-      Axios.post('/api/yahoo/player/stats', {
-        player_key: key,
-        week: week
-      }).then((response) => {
-        console.log(response)
-        let player = response.data
-        let weekProjected = []
-        let projectedStats = response.data.stats.stats
-        self.projections.forEach(dates => {
-          dates.forEach(player => {
-            if (response.data.name.full === player.Name) {
-              weekProjected.push(player)
-            }
-          })
-        })
-        weekProjected.forEach((day) => {
-          for (const stat in day) {
-            let formattedCategory = stat.replace('/', '')
-            if (store.state.categories.some(category => {
-              if (category.name === formattedCategory) {
-                return true
-              }
-            })) {
-              if (projectedStats.some(category => {
-                if (category.stat_id === 'p-' + stat) {
-                  return true
-                }
-              })) {
-              } else {
-                let id = store.state.categories.filter(category => {
-                  if (category.name === formattedCategory) {
-                    return category
-                  }
-                })[0]
-                let flag = projectedStats.find(stat => stat.stat_id === 'p-' + id.stat_id)
-                if (flag !== undefined) {
-                  projectedStats.find(projectedStat => {
-                    if (projectedStat.stat_id === 'p-' + id.stat_id) {
-                      projectedStat.value = projectedStat.value + day[stat]
-                    }
-                  })
-                }
-                projectedStats.push({'value': day[stat], 'stat_id': 'p-' + id.stat_id})
-              }
-            }
-          }
-        })
-        player.projected = projectedStats
-        self.players.push(player)
-      }).catch((error) => {
-        console.log(error)
-      })
-    },
-    getAdvancedStats() {
-
-    },
-    getProjections () {
-      let self = this
+      let totals = []
       this.gameDays.forEach(date => {
-        getDailyProjection(date).then((response) => {
-          response.forEach(player => {
-            self.projections.forEach(rostered => {   
-              if (rostered.name == player.Name) {
-                rostered.projections.push(player)
+        getDailyProjection(date).then((day) => {
+          let projectedPlayers = day.filter(player => {
+            let players = self.players.some(currentPlayer => {
+              if (currentPlayer.name.full === player.Name) {
+                return currentPlayer;
               }
             })
+            if (players) {
+              return players
+            }
+          })
+          self.players.map(currentPlayer => {
+            let player = projectedPlayers.filter(player => {
+              if (player.Name === currentPlayer.name.full) {
+                return player
+              }
+            })
+            if (player.length > 0) {
+              player = player.map(player => {
+                player.PowerPlayPoints = player.PowerPlayAssists + player.PowerPlayGoals
+                if (player.Games === 1){
+                  player.GoaltendingSavePercentage = player.GoaltendingSaves / (player.GoaltendingSaves + player.GoaltendingGoalsAgainst)
+                  player.GoaltendingGoalsAgainstAverage = player.GoaltendingGoalsAgainst
+                }
+                return player
+              })
+              if (currentPlayer.projections === undefined) {
+                currentPlayer.projections = [player[0]]
+              } else {
+                currentPlayer.projections.push(player[0])
+              }
+            }
+            return currentPlayer
+          })
+          // PROJECTED TOTALS
+          projectedPlayers.forEach(player => {
+            let stats = Object.keys(player)
+            let value = Object.values(player)
+            stats.forEach((stat, i) => {
+              self.store.league.settings.stat_categories.forEach(cat => {
+                if (statIdToProjection(cat.stat_id.toString()) === stat) {
+                  if (totals[stat] === undefined) {
+                    totals[stat] = 0
+                  }
+                  if (typeof value[i] !== 'string' || !value[i] instanceof String) {
+                    totals[stat] += value[i]
+                  }
+                }
+              })
+            })
+          })
+          self.projectionsTotals = self.store.league.settings.stat_categories.map(cat => {
+            let projectedStat = Object.keys(totals).filter(stat => {
+              if (statIdToProjection(cat.stat_id.toString()) === stat){
+                return totals[stat]
+              }
+            }).map(stat => {
+              return totals[stat]
+            })[0]
+            return {
+              'display_name':cat.display_name,
+              'value':projectedStat === undefined ? 0 : projectedStat
+            }
           })
         })
       })
     },
-    getPlayerAverages () {
+    playerAverages() {
       let self = this;
       let playerNames = this.players.map(player => player.name.full)
       getPlayerAverages(playerNames, 3).then(response => {
-        self.projections = self.projections.map(projected_player => {
-          let playerAverageStates = response.filter(player => {if(player.nhl_player_id === projected_player.nhl_player_id) return player})
-          return {player, ...playerAverageStates}
+        self.players.map(player => {
+          player.averages = response.filter(averagedStatline => {
+            if (player.name.full === averagedStatline.name) {
+              return player
+            }
+          })[0].previousGames
+          return player
         })
       })
     }
@@ -247,8 +240,8 @@ export default {
     team_id: function () {
       return this.teamID === undefined ? this.$route.params.team_id : this.teamID
     },
-    gameDays () {
-      function convertDate (date) {
+    gameDays() {
+      function convertDate(date) {
         var months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
         var yyyy = date.getFullYear().toString()
         var mm = (date.getMonth()).toString()
@@ -258,7 +251,7 @@ export default {
 
         return yyyy + '-' + months[mm] + '-' + (ddChars[1] ? dd : '0' + ddChars[0])
       }
-      function getDates (start, end) {
+      function getDates(start, end) {
         let arr = []
         end = new Date(end.setDate(end.getDate() + 2))
         for (start; start < end; start = new Date(start.setDate(start.getDate() + 1))) {
@@ -269,7 +262,7 @@ export default {
       return getDates(new Date(this.store.league.scoreboard.matchups[0].week_start), new Date(this.store.league.scoreboard.matchups[0].week_end))
     }
   },
-  mounted () {
+  mounted() {
     this.getTeamPlayers()
   }
 }

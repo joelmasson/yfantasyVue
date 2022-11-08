@@ -1,6 +1,8 @@
-import Axios from "axios";
-
-type Game = {
+export type Averages = {
+  nhl_player_id: String;
+  coverage_type: String; //Season
+  coverage_value: Number; // 20202021
+  GAME: number;
   HIT: number;
   ON_ICE_HIT: number;
   HIT_AGAINST: number;
@@ -113,9 +115,9 @@ type Game = {
   "5_ON_3_GOAL": number;
   "4_ON_5_GOAL": number;
   "3_ON_5_GOAL": number;
+  "5_ON_4_ASSIST": number;
   ASSIST: number;
   ASSIST_2: number;
-  "5_ON_4_ASSIST": number;
   "5_ON_4_ASSIST_2": number;
   ON_ICE_GOAL: number;
   GOAL_ALLOWED: number;
@@ -177,32 +179,13 @@ type Game = {
   CORSI_AGAINST: number;
   PLUS_MINUS: number;
   GAME_SCORE: number;
-  TOI: number;
+  TOI: String;
 };
 
-type PlayerGameAverages = {
-  data: Game[];
+export type Category = {
+  display_name: string;
+  name: string;
+  stat_id: number;
 };
 
-type names = [string]
-
-export default async function getPlayerAverages(playerNames: names, numberOfGames:number) {
-  try {
-    const { data, status } = await Axios.post<PlayerGameAverages>('/api/players', {
-        data: {player_names: playerNames},
-        statType: 'averages',
-        limit: numberOfGames,
-      }
-    );
-    return data;
-  } catch (error) {
-    if (Axios.isAxiosError(error)) {
-      console.log("error message: ", error.message);
-      return error.message;
-    } else {
-      console.log("unexpected error: ", error);
-      return "An unexpected error occurred";
-    }
-    return error;
-  }
-}
+export type StatCategories = [Category];

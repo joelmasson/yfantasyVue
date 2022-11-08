@@ -6,7 +6,7 @@ import Game from '../components/Game.vue'
 import Team from '../components/Team.vue'
 import Players from '../components/Players.vue'
 import PlayerPage from '../components/PlayerPage.vue'
-import Matchup from '../components/Matchup.vue'
+import MatchupPage from '../components/MatchupPage.vue'
 
 const DashboardRouter: Array<RouteRecordRaw> = [
     {
@@ -42,7 +42,7 @@ const DashboardRouter: Array<RouteRecordRaw> = [
     {
         path: '/game/:game_id/league/:league_id/week/:week_num/matchup/:matchup',
         name: 'Matchup',
-        component: Matchup
+        component: MatchupPage
     }
 ];
 export default DashboardRouter;

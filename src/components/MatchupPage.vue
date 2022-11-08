@@ -1,16 +1,19 @@
 
 <template>
   <section>
-    <MatchupHeader :matchup="getMatch" :settings="settings" :schedule="weeklySchedule"></MatchupHeader>
+    <MatchupHeader :matchup="getMatch" :schedule="weeklySchedule"></MatchupHeader>
     <Calender :dates="weeklySchedule"></Calender>
     <!-- <SelectFilter :default="chosenStat" :label="'Sort by Stat'" :options="settings" @updateSelectFilter="updateFilter"></SelectFilter> -->
-    <!-- <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[0].team_id" :teams="proTeams" :settings="settings"></MatchupTeam>
-        <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[1].team_id" :teams="proTeams" :settings="settings"></MatchupTeam> -->
+    <!-- <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[0].team_id" :teams="proTeams" :settings="store.league.settings"></MatchupTeam>
+    <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[1].team_id" :teams="proTeams" :settings="store.league.settings"></MatchupTeam> -->
     <!-- <p v-else>LOADING PLAY BY PLAY DATA...</p> -->
-    <!-- <Team v-for="team in getMatch.teams" :key="team.team_id" :teamID="team.team_id" :projections="projections"></Team> -->
+    <Team v-for="team in getMatch.teams" :key="team.team_id" :teamID="team.team_id"></Team>
   </section>
 </template>
 <script>
+import { useRouter, useRoute } from 'vue-router'
+import { useStore } from '../stores/index.js'
+
 import Calender from './calender/calender.vue'
 import MatchupHeader from './MatchupHeader.vue'
 import MatchupTeam from './matchup/matchup-team.vue'
@@ -22,14 +25,18 @@ import SelectFilter from './ui/SelectFilter.vue'
 import Axios from 'axios'
 
 export default {
-  name: 'Matchup',
+  name: 'MatchupPage',
   components: {
     MatchupHeader, TeamProfile, Team, Calender, MatchupTeam, SelectFilter
   },
+  setup() {
+    const route = useRoute()
+    const store = useStore()
+
+    return { store, route }
+  },
   data() {
     return {
-      settings: this.$store.state.categories,
-      defaultStat: this.$store.state.categories[0],
       chosenStat: 'GAME_SCORE',
       playbyplays: [],
       proTeams: [],
@@ -57,7 +64,6 @@ export default {
     // },
     getProTeams: function () {
       let self = this
-      console.log('teams')
       Axios.get('/api/team/all')
         .then(response => {
           self.proTeams = response.data
@@ -98,7 +104,7 @@ export default {
   computed: {
     getMatch() {
       let homeId = this.$route.params.matchup.split('-')[0]
-      return this.$store.getters.getMatch(homeId)
+      return this.store.getMatch(homeId)
     },
     weeklySchedule() {
       let end = new Date(this.getMatch.week_end + 'T00:00:00.000-04:00')
@@ -121,13 +127,11 @@ export default {
         dates.push(date)
         dateMove.setDate(dateMove.getDate() + 1)
       };
-      console.log(dates)
       return dates
     }
   },
   mounted() {
     this.getProTeams()
-    this.$store.dispatch('getStateData')
   }
 }
 </script>

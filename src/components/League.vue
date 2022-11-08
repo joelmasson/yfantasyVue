@@ -1,13 +1,12 @@
 <template>
   <div>
       <Standings :standings='this.store.league'></Standings>
-      <Matchups v-if="matchups.length > 0" :matchups='matchups' :standings='league' @selectedWeek="updateSelectedWeek"></Matchups>
+      <Matchups :league='this.store.league' @selectedWeek="updateSelectedWeek"></Matchups>
     </div>
 </template>
 <script>
 import Axios from 'axios'
 import { useRouter, useRoute } from 'vue-router'
-
 import { useStore } from '../stores/index.js'
 
 import Standings from './Standings.vue'
@@ -42,7 +41,6 @@ export default {
       playByPlayData: [],
       dates: [],
       currentWeek: 1,
-      matchups: []
     }
   },
   components: {
@@ -118,7 +116,6 @@ export default {
       let self = this
       Axios.get('/api/season/' + this.route.params.game_id)
         .then(response => {
-          console.log(response)
           let today = new Date()
           if (response.data.error === 'Season not found') {
             self.getCurrentExternalSeason()
@@ -206,9 +203,7 @@ export default {
         start: start,
         end: end
       }).then((response) => {
-        console.log(response)
         let today = new Date()
-        console.log(today, new Date(self.dates[1].date))
         if (today > new Date(self.dates[1].date)) {
         // if (response.data !== 'No PBP available') {
           self.dates = self.dates.slice(1)
@@ -224,7 +219,6 @@ export default {
       let games = this.scrapedSeason.dates.map(date => {
         return date.games.map(game => {
           let date = new Date(game.gameDate)
-          console.log(game.teams)
           return {
             'timestamp': date,
             'game_key': this.$route.params.game_id,
@@ -272,17 +266,16 @@ export default {
       })
     },
     getMatchups: function (week) {
-      let self = this
-      console.log(this.$route.params.game_id + '.l.' + this.$route.params.league_id, week)
-      Axios.post('/api/yahoo/league/scoreboard', {
-        league_key: this.$route.params.game_id + '.l.' + this.$route.params.league_id,
-        week: week
-      }).then(response => {
-        console.log('here')
-        self.matchups = response.data.scoreboard.matchups
-      }).catch((error) => {
-        console.log('error', error)
-      })
+      // let self = this
+      // Axios.post('/api/yahoo/league/scoreboard', {
+      //   league_key: this.$route.params.game_id + '.l.' + this.$route.params.league_id,
+      //   week: week
+      // }).then(response => {
+      //   console.log('here')
+      //   self.matchups = response.data.scoreboard.matchups
+      // }).catch((error) => {
+      //   console.log('error', error)
+      // })
     },
     setFantasyOwnership: function (players) {
       Axios.post('/api/players', {
@@ -299,6 +292,7 @@ export default {
   },
   mounted () {
     this.getCurrentSeason()
+    this.getMatchups()
     // Check if the season data is saved
   }
 }

@@ -1,3 +1,5 @@
+import { Averages, StatCategories } from "../types";
+
 export function statIdToProjection(category: string) {
   switch (category) {
     case "1":
@@ -34,4 +36,48 @@ export function statIdToProjection(category: string) {
       return "GoaltendingShutouts";
     default:
   }
+}
+
+function StatAveragesMerged(name: string, averages: Averages) {
+  switch (name) {
+    case "Goals":
+      return averages.GOAL;
+    case "Assists":
+      return averages.ASSIST + averages.ASSIST_2;
+    case "PlusMinus":
+      return averages.PLUS_MINUS;
+    case "PowerPlayPoints":
+      return averages.PLUS_MINUS;
+    case "PenaltyMinutes":
+      return averages.PENALTY_FOR;
+    case "PowerPlayPoints":
+      return (
+        averages["5_ON_4_GOAL"] +
+        averages["5_ON_3_GOAL"] +
+        averages["5_ON_4_ASSIST"] +
+        averages["5_ON_4_ASSIST_2"]
+      );
+    case "FaceoffsWon":
+      return averages["FACEOFF_WIN"];
+    case "Hits":
+      return averages["HIT"];
+    case "Blocks":
+      return averages["BLOCKED_SHOT"];
+    default:
+      break;
+  }
+}
+
+export function AverageStatByOpposition(
+  averages: Averages,
+  oppositionRating: string,
+  statCategories: StatCategories
+) {
+  statCategories.map((category) => {
+    let value = StatAveragesMerged(category.name, averages)
+    return {
+      'name':category.display_name,
+      'value':value
+    }
+  });
 }

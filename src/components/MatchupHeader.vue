@@ -1,19 +1,22 @@
 <template>
     <div>
-      <TeamProfile :team="matchup.teams[0]" :settings="settings"></TeamProfile>
+      <TeamProfile :team="matchup.teams[0]"></TeamProfile>
       <span>{{score(matchup.teams[0].team_key, matchup)}}</span>
       <span>{{score(matchup.teams[1].team_key, matchup)}}</span>
-      <TeamProfile :team="matchup.teams[1]" :settings="settings"></TeamProfile>
+      <TeamProfile :team="matchup.teams[1]"></TeamProfile>
     </div>
 </template>
 <script>
+import { useRouter, useRoute } from 'vue-router'
+import { useStore } from '../stores/index.js'
+
 import TeamProfile from './TeamProfile.vue'
 export default {
   name: 'MatchupHeader',
   components: {
     TeamProfile
   },
-  props: ['matchup', 'settings', 'schedule'],
+  props: ['matchup', 'schedule'],
   methods: {
     score: (teamID, matchup) => {
       let ID = teamID

@@ -1,4 +1,4 @@
-export type Averages = {
+export type GameEvents = {
   nhl_player_id: String;
   coverage_type: String; //Season
   coverage_value: Number; // 20202021
@@ -179,6 +179,10 @@ export type Averages = {
   CORSI_AGAINST: number;
   PLUS_MINUS: number;
   GAME_SCORE: number;
+  SAVE_PERCENTAGE: number;
+  GOALS_AGAINST_AVERAGE: number;
+  SHUTOUT: number;
+  PENALTY_MINUTES: number;
   TOI: String;
 };
 
@@ -189,3 +193,9 @@ export type Category = {
 };
 
 export type StatCategories = [Category];
+
+export type Stat = {
+    [key: string]: number
+}
+
+export type Stats = [Stat]

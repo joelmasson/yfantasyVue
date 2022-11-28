@@ -4,10 +4,10 @@
     <MatchupHeader :matchup="getMatch" :schedule="weeklySchedule"></MatchupHeader>
     <Calender :dates="weeklySchedule"></Calender>
     <!-- <SelectFilter :default="chosenStat" :label="'Sort by Stat'" :options="settings" @updateSelectFilter="updateFilter"></SelectFilter> -->
-    <!-- <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[0].team_id" :teams="proTeams" :settings="store.league.settings"></MatchupTeam>
-    <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[1].team_id" :teams="proTeams" :settings="store.league.settings"></MatchupTeam> -->
+    <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[0].team_id" :teams="proTeams" :settings="store.league.settings"></MatchupTeam>
+    <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[1].team_id" :teams="proTeams" :settings="store.league.settings"></MatchupTeam>
     <!-- <p v-else>LOADING PLAY BY PLAY DATA...</p> -->
-    <Team v-for="team in getMatch.teams" :key="team.team_id" :teamID="team.team_id"></Team>
+    <!-- <Team v-for="team in getMatch.teams" :key="team.team_id" :teamID="team.team_id"></Team> -->
   </section>
 </template>
 <script>

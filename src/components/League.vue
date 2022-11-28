@@ -249,8 +249,8 @@ export default {
         })
     },
     getYahooOwnership: function () {
-      let teamKeys = this.league.teams.map(team => {
-        return this.$route.params.game_id + '.l.' + this.$route.params.league_id + '.t.' + team.team_id
+      let teamKeys = this.store.league.standings.map(team => {
+        return team.team_key
       })
       Axios.post('/api/yahoo/players/teams', {
         team_key: teamKeys,
@@ -293,6 +293,7 @@ export default {
   mounted () {
     this.getCurrentSeason()
     this.getMatchups()
+    this.getYahooOwnership()
     // Check if the season data is saved
   }
 }

@@ -186,11 +186,21 @@ type PlayerGameAverages = {
 
 type names = [string]
 
-export default async function getPlayerAverages(playerNames: names, numberOfGames:number) {
+interface unknownQuery { [key: string]: any }
+
+export default async function getPlayerAverages(matchData: unknownQuery, numberOfGames:number, sortBy:string) {
+  let queryObj:unknownQuery = {};
+  for (var key in matchData) {
+    if (!queryObj.hasOwnProperty(key)) {
+      queryObj[key] = {'$in':matchData[key]};
+      console.log(queryObj)
+    }
+  }
   try {
     const { data, status } = await Axios.post<PlayerGameAverages>('/api/players', {
-        data: {player_names: playerNames},
+        data: queryObj,
         statType: 'averages',
+        sortBy: sortBy,
         limit: numberOfGames,
       }
     );
@@ -203,6 +213,5 @@ export default async function getPlayerAverages(playerNames: names, numberOfGame
       console.log("unexpected error: ", error);
       return "An unexpected error occurred";
     }
-    return error;
   }
 }

@@ -1,202 +1,343 @@
 <template>
-  <div>
-    <div class="bg-white shadow overflow-scroll sm:rounded-lg mb-10">
-      <table class="min-w-full divide-y divide-gray-200" x-max="1">
-        <thead>
-          <tr>
-            <th scope="col"
-              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              v-for="(category, i) in projectionsTotals" :key="i">
-              {{ category.display_name }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td v-for="(stat, i) in projectionsTotals" :key="i">
-              {{ stat.value.toFixed(2) }}
-            </td>
-          </tr>
-          <!-- <Player
-            v-for="(player, index) in player_type.players"
-            :key="player.player_id"
-            :player="player"
-            :team="team"
-            :allCategories="false"
-            :projections="projections[index]"
-          ></Player> -->
-        </tbody>
-      </table>
-    </div>
-    <div class="bg-white shadow overflow-scroll sm:rounded-lg mb-10" v-for="(player_type, i) in roster" :key="i">
-      <!-- <TeamHeader :team="team" ></TeamHeader> -->
-      <!-- <FilterMenu></FilterMenu> -->
-      <table class="min-w-full divide-y divide-gray-200" x-max="1">
-        <thead>
-          <tr>
-            <th scope="col"
-              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Pos
-            </th>
-            <th scope="col"
-              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Type
-            </th>
-            <th scope="col"
-              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            </th>
-            <th scope="col"
-              class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              v-for="(category, i) in player_type.stats" :key="i">
-              {{ category.display_name }}
-            </th>
-
-          </tr>
-        </thead>
-        <tbody>
-          <Player v-for="(player) in player_type.players" :key="player.player_id" :player="player" :team="team"
-            :allCategories="false"></Player>
-        </tbody>
-      </table>
-    </div>
+  <div class="bg-white shadow-md rounded-lg" v-if="players.length > 0 && weekMatches.length > 0">
+    <Replacements :availableSpots="availableSpots"></Replacements>
+    <MatchupProjectionWeek :settings="store.league.settings.stat_categories" :players="players" :schedule="weekMatches" :scoreboard="scoreboard"></MatchupProjectionWeek>
+    <MatchupPlayer v-for="player in players" :key="player.player_id" :player="player" :dates="gameDay" :schedule="weekMatches">
+    </MatchupPlayer>
   </div>
 </template>
 <script>
-import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useStore } from '../stores/index.js'
-import { statIdToProjection } from '../utils/index'
-
-import TeamHeader from './TeamHeader.vue'
-import FilterMenu from './FilterMenu.vue'
-import Player from './Player.vue'
-import Axios from 'axios'
-
-import getDailyProjection from '../services/sportsData'
+import { gameDays } from '../utils/index.ts'
+import { teamNamesAbv } from '../utils/teamNames'
 import getPlayerAverages from '../services/apiData';
 
+import Axios from 'axios'
+import MatchupPlayer from './matchup/matchup-player.vue'
+import MatchupProjectionWeek from './matchup/matchup-projection-week.vue'
+import Replacements from './replacements/replacementBanner.vue'
 export default {
   name: 'Team',
+  components: {
+    MatchupPlayer,
+    MatchupProjectionWeek,
+    Replacements
+  },
   setup() {
     const route = useRoute()
     const store = useStore()
-    return { store, route }
+    let availableSpots = ref([])
+    let scoreboard = ref(null)
+    let gameDay = ref([])
+    let players = ref({})
+    let NHLStandings = ref({})
+    let NHLSchedule = ref({})
+    let weekMatches = ref({})
+    let roster = ref([{ position: "C", count: 2 }, { position: "RW", count: 2 }, { position: "LW", count: 2 }, { position: "D", count: 4 }, { position: "Util", count: 1 }, { position: "G", count: 2 }],)
+
+    // store.getProjections()
+    function getScoreBoard() {
+      return Axios.post('/api/yahoo/league/scoreboard', {
+        league_key: store.league.league_key,
+        week: route.params.week_num
+      }).then((response) => {
+        scoreboard.value = response.data.scoreboard.matchups
+        gameDay.value = gameDays(scoreboard.value[0].week_start, scoreboard.value[0].week_end)
+        getRoster()
+      }).catch((error) => {
+        console.log('error', error)
+      })
+    }
+    function getRoster() {
+      /* -----
+        Get all roster players and the days where they are starting from Yahoo
+      ---- */
+      let startingLineupPromise = gameDay.value.map(date => {
+        let day = new Date(date)
+        let yyyy = day.getFullYear().toString()
+        let mm = (day.getMonth() + 1)
+        let dd = day.getDate().toString()
+        return Axios.post('/api/yahoo/roster/players', {
+          team_key: route.params.game_id + '.l.' + route.params.league_id + '.t.' + route.params.team_id,
+          date: yyyy + '-' + mm + '-' + dd
+        }).then((response) => {
+          return response.data.roster
+        })
+      })
+      
+      Promise.allSettled(startingLineupPromise).then(response => {
+        let roster = response[0].value.map(player => {
+          return {
+            ...player,
+            projections: [],
+            averages: [],
+            starting: []
+          }
+        })
+        response.forEach((day, i) => {
+          roster.forEach(player => {
+            let dayPlayer = day.value.filter(gamePlayer => {
+              if (gamePlayer.player_id === player.player_id) {
+                return gamePlayer
+              }
+            })
+            if (dayPlayer.length > 0) {
+              player.starting.push({ date: gameDay.value[i], position: dayPlayer[0].selected_position })
+            }
+          })
+        })
+        players.value = roster
+        getWeekSchedule()
+      })
+    }
+    function getNHLStandings () {
+      Axios.get('https://statsapi.web.nhl.com/api/v1/standings').then((response) => {
+        NHLStandings.value = response.data.records.flatMap(date => {
+          return date.teamRecords
+        })
+      }).catch((error) => {
+        console.log('error', error)
+      })
+    }
+    function getNHLSchedule () {
+      Axios.get('https://statsapi.web.nhl.com/api/v1/schedule?startDate=' + store.league.start_date + '&endDate=' + store.league.end_date).then((response) => {
+        NHLSchedule.value = response.data.dates.flatMap(date => {
+          return date.games
+        })
+      }).catch((error) => {
+        console.log('error', error)
+      })
+    }
+    function getWeekSchedule () {
+      function compare(a, b) {
+        if (a.games > b.games) {
+          return -1
+        }
+        if (a.games < b.games) {
+          return 1
+        }
+        return 0
+      }
+      Axios.get('https://statsapi.web.nhl.com/api/v1/schedule?startDate=' + store.league.scoreboard.matchups[0].week_start + '&endDate=' + store.league.scoreboard.matchups[0].week_end).then((response) => {
+        let arrayOfGames = response.data.dates.flatMap(date => {
+          return date.games
+        })
+        weekMatches.value = arrayOfGames.map(game => {
+          game.teams.away.sos = gameSOS(game.teams.away.team.id, arrayOfGames)
+          game.teams.home.sos = gameSOS(game.teams.home.team.id, arrayOfGames)
+          return game
+        })
+
+        let gamesPerTeam = arrayOfGames.reduce(function (sums, entry) {
+          sums[entry.teams.home.team.name] = (sums[entry.teams.home.team.name] || 0) + 1;
+          sums[entry.teams.away.team.name] = (sums[entry.teams.away.team.name] || 0) + 1;
+          return sums
+        }, {})
+        self.availableTeams = Object.keys(gamesPerTeam).map(team => {
+          return {
+            team: team,
+            games: gamesPerTeam[team]
+          }
+        }).map(team => {
+          let teamGames = arrayOfGames.filter(game => {
+            if (game.teams.away.team.name === team.team || game.teams.home.team.name === team.team) {
+              return game
+            }
+          }).map(game => {
+            if (game.teams.away.team.name === team.team) {
+              return gameSOS(game.teams.home.team.id, arrayOfGames)
+            } else if (game.teams.home.team.name === team.team) {
+              return gameSOS(game.teams.away.team.id, arrayOfGames)
+            }
+          })
+          let sosRating = teamGames.reduce((a, b) => { return a + b }) / teamGames.length
+          team.sos = sosRating
+          return team
+        }).sort(compare)
+        playerAverages()
+      }).catch((error) => {
+        console.log('error', error)
+      })
+    }
+    function gameSOS (opponent, games) {
+      // Get Opponent's Schedule
+      let opponentSchedule = games.filter(game => {
+        if (game.teams.home.team.id === opponent) {
+          return game
+        } else if (game.teams.away.team.id === opponent) {
+          return game
+        }
+      })
+      // Get Opponent's Opponents Record
+      let allOpponents = opponentSchedule.map(game => {
+        if (game.teams.home.team.id === opponent) {
+          return game.teams.away.team.id
+        } else if (game.teams.away.team.id === opponent) {
+          return game.teams.home.team.id
+        }
+      })
+      let OOR = NHLStandings.value.filter(team => {
+        if (allOpponents.includes(team.team.id)) {
+          return team
+        }
+      }).map(team => {
+        return team.pointsPercentage
+      }).reduce(function (a, b) {
+        return (a + b) / 2
+      }, 0)
+      let opponentRecord = NHLStandings.value.filter(team => {
+        if (opponent === team.team.id) {
+          return team
+        }
+      }).map(team => {
+        return team.pointsPercentage
+      })
+      return ((2 * (opponentRecord)) + (OOR / allOpponents.length)) / 3
+    }
+    function findAvailableSpots() {
+      let gameDays = gameDay.value.map(date => {
+        return { day: date, roster: [{ position: "C", count: 2 }, { position: "RW", count: 2 }, { position: "LW", count: 2 }, { position: "D", count: 4 }, { position: "Util", count: 1 }, { position: "G", count: 2 }], teams: [] }
+      }).map(date => {
+        let games = weekMatches.value.filter(match => {
+          if (new Date(date.day).setHours(0, 0, 0, 0) === new Date(match.gameDate).setHours(0, 0, 0, 0)) {
+            return match
+          }
+        })
+        date.teams = games.flatMap(game => {
+          return [game.teams.home.team.name, game.teams.away.team.name]
+        })
+        players.value.filter(player => {
+          if (player.status === undefined && player.averages.GAME_SCORE > 1.25) { // Player is actve
+            if (games.some(game => game.teams.home.team.name === player.editorial_team_full_name || game.teams.away.team.name === player.editorial_team_full_name)) { // player is playing
+              return player
+            }
+          }
+        }).map(player => {
+          let found = false
+          for (const position of player.eligible_positions) {
+            if (!found) {
+              for (const roster_position of date.roster) {
+                if (roster_position.position === position && roster_position.count > 0) {
+                  found = true;
+                  roster_position.count -= 1;
+                  break;
+                }
+              }
+            } else {
+              break
+            }
+          }
+        })
+        return date
+      })
+      availableSpots.value = gameDays
+    }
+    function playerAverages() {
+      let playerNames = players.value.map(player => player.name.full)
+      getPlayerAverages({name:playerNames}, 3, 'GAME_SCORE').then(response => {
+        players.value = players.value.map(player => {
+          player.averages = response.filter(averagedStatline => {
+            if (player.name.full === averagedStatline.name) {
+              return player
+            }
+          })[0].previousGames
+          return player
+        })
+        findAvailableSpots()
+      })
+    }
+    onMounted(() => {
+      if (parseInt(route.params.week_num) !== store.league.current_week) {
+        getScoreBoard();
+      } else {
+        scoreboard.value = store.league.scoreboard.matchups
+        gameDay.value = gameDays(scoreboard.value[0].week_start, scoreboard.value[0].week_end)
+        getRoster()
+      }
+      getNHLStandings();
+      getNHLSchedule();
+    });
+    return { store, route, players, weekMatches, scoreboard, gameDay, availableSpots }
   },
   data() {
     return {
-      game_id: this.$route.params.game_id,
-      league_id: this.$route.params.league_id,
-      week_num: this.$route.params.week_num,
-      team: [],
-      players: [],
-      projectionsTotals: {},
-      averages: []
+      roster: [{ position: "C", count: 2 }, { position: "RW", count: 2 }, { position: "LW", count: 2 }, { position: "D", count: 4 }, { position: "Util", count: 1 }, { position: "G", count: 2 }]
     }
   },
-  props: ['teamID'],
-  components: {
-    TeamHeader,
-    FilterMenu,
-    Player
-  },
   methods: {
-    getTeamPlayers: function () {
-      let self = this
-      Axios.post('/api/yahoo/players/teams', {
-        team_key: self.game_id + '.l.' + self.league_id + '.t.' + self.team_id,
-        subresources: ['stats']
-      })
-        .then((response) => {
-          console.log(response)
-          self.team = response.data[0]
-          self.players = response.data[0].players.map(player => {
-            return {
-              ...player,
-              projections: [],
-              averages: []
-            }
-          })
-          this.getProjections()
-          this.playerAverages()
-        })
-        .catch((error) => {
-          console.log('error', error)
-        })
+    projectedStat: function () {
+      function compare(a, b) {
+        if (a.coverage_value > b.coverage_value) {
+          return -1
+        }
+        if (a.coverage_value < b.coverage_value) {
+          return 1
+        }
+        return 0
+      }
+      let playbyplayGames = this.player.stats.filter(game => {
+        let season = game.coverage_value.substring(0, 4)
+        if (game.coverage_type === 'Game' && season === this.today.substring(0, 4)) {
+          return game
+        }
+      }).sort(compare)
+      return (5 * parseInt(playbyplayGames[0].stats[this.chosenStat]) + 4 * parseInt(playbyplayGames[1].stats[this.chosenStat]) + 3 * parseInt(playbyplayGames[2].stats[this.chosenStat])) / (5 + 4 + 3)
     },
     getProjections() {
       let self = this
-      let totals = []
-      this.gameDays.forEach(date => {
-        getDailyProjection(date).then((day) => {
-          let projectedPlayers = day.filter(player => {
-            let players = self.players.some(currentPlayer => {
-              if (currentPlayer.name.full === player.Name) {
-                return currentPlayer;
-              }
-            })
-            if (players) {
-              return players
-            }
-          })
-          self.players.map(currentPlayer => {
-            let player = projectedPlayers.filter(player => {
-              if (player.Name === currentPlayer.name.full) {
-                return player
-              }
-            })
-            if (player.length > 0) {
-              player = player.map(player => {
-                player.PowerPlayPoints = player.PowerPlayAssists + player.PowerPlayGoals
-                if (player.Games === 1){
-                  player.GoaltendingSavePercentage = player.GoaltendingSaves / (player.GoaltendingSaves + player.GoaltendingGoalsAgainst)
-                  player.GoaltendingGoalsAgainstAverage = player.GoaltendingGoalsAgainst
-                }
-                return player
-              })
-              if (currentPlayer.projections === undefined) {
-                currentPlayer.projections = [player[0]]
-              } else {
-                currentPlayer.projections.push(player[0])
-              }
-            }
-            return currentPlayer
-          })
-          // PROJECTED TOTALS
-          projectedPlayers.forEach(player => {
-            let stats = Object.keys(player)
-            let value = Object.values(player)
-            stats.forEach((stat, i) => {
-              self.store.league.settings.stat_categories.forEach(cat => {
-                if (statIdToProjection(cat.stat_id.toString()) === stat) {
-                  if (totals[stat] === undefined) {
-                    totals[stat] = 0
-                  }
-                  if (typeof value[i] !== 'string' || !value[i] instanceof String) {
-                    totals[stat] += value[i]
-                  }
-                }
-              })
-            })
-          })
-          self.projectionsTotals = self.store.league.settings.stat_categories.map(cat => {
-            let projectedStat = Object.keys(totals).filter(stat => {
-              if (statIdToProjection(cat.stat_id.toString()) === stat){
-                return totals[stat]
-              }
-            }).map(stat => {
-              return totals[stat]
-            })[0]
-            return {
-              'display_name':cat.display_name,
-              'value':projectedStat === undefined ? 0 : projectedStat
-            }
-          })
-        })
-      })
+
+      // let dailyProjectionPromise = this.gameDays.map(day => {
+      //   return getDailyProjection(day)
+      // })
+      // console.log(dailyProjectionPromise)
+      // Promise.allSettled(dailyProjectionPromise).then(response => {
+      //   console.log(response)
+      // })
+      // this.gameDays.forEach(date => {
+      //   getDailyProjection(date).then((day) => {
+      //     let projectedPlayers = day.filter(player => {
+      //       let players = self.players.some(currentPlayer => {
+      //         if (currentPlayer.name.full === player.Name) {
+      //           return currentPlayer;
+      //         }
+      //       })
+      //       if (players) {
+      //         return players
+      //       }
+      //     })
+      //     self.players.map(currentPlayer => {
+      //       let player = projectedPlayers.filter(player => {
+      //         if (player.Name === currentPlayer.name.full) {
+      //           return player
+      //         }
+      //       })
+      //       if (player.length > 0) {
+      //         player = player.map(player => {
+      //           player.PowerPlayPoints = player.PowerPlayAssists + player.PowerPlayGoals
+      //           if (player.Games === 1){
+      //             player.GoaltendingSavePercentage = player.GoaltendingSaves / (player.GoaltendingSaves + player.GoaltendingGoalsAgainst)
+      //             player.GoaltendingGoalsAgainstAverage = player.GoaltendingGoalsAgainst
+      //           }
+      //           return player
+      //         })
+      //         if (currentPlayer.projections === undefined) {
+      //           currentPlayer.projections = [player[0]]
+      //         } else {
+      //           currentPlayer.projections.push(player[0])
+      //         }
+      //       }
+      //       return currentPlayer
+      //     })
+      //     // PROJECTED TOTALS
+      //   })
+      // })
     },
-    playerAverages() {
+    replacements() {
       let self = this;
-      let playerNames = this.players.map(player => player.name.full)
-      getPlayerAverages(playerNames, 3).then(response => {
+      let teams = this.players.map(player => player.name.full)
+      getPlayerAverages(playerNames, 3, 'name').then(response => {
         self.players.map(player => {
           player.averages = response.filter(averagedStatline => {
             if (player.name.full === averagedStatline.name) {
@@ -209,61 +350,10 @@ export default {
     }
   },
   computed: {
-    roster: function () {
-      let positions = Array.from(
-        new Set(
-          this.store.league.settings.stat_categories.map((category) => {
-            return category.position_type
-          })
-        )
-      )
-      let positionsObj = positions.map((position) => {
-        // Returns an object for each position
-        return { position_type: position, players: [], stats: [] }
-      })
-      this.players.forEach((player) => {
-        positionsObj.forEach((position) => {
-          if (position.position_type === player.position_type) {
-            position.players.push(player)
-          }
-        })
-      })
-      this.store.league.settings.stat_categories.forEach((category) => {
-        positionsObj.forEach((position) => {
-          if (position.position_type === category.position_type) {
-            position.stats.push(category)
-          }
-        })
-      })
-      return positionsObj
-    },
-    team_id: function () {
-      return this.teamID === undefined ? this.$route.params.team_id : this.teamID
-    },
-    gameDays() {
-      function convertDate(date) {
-        var months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-        var yyyy = date.getFullYear().toString()
-        var mm = (date.getMonth()).toString()
-        var dd = date.getDate().toString()
-
-        var ddChars = dd.split('')
-
-        return yyyy + '-' + months[mm] + '-' + (ddChars[1] ? dd : '0' + ddChars[0])
-      }
-      function getDates(start, end) {
-        let arr = []
-        end = new Date(end.setDate(end.getDate() + 2))
-        for (start; start < end; start = new Date(start.setDate(start.getDate() + 1))) {
-          arr.push(convertDate(new Date(start)))
-        }
-        return arr
-      };
-      return getDates(new Date(this.store.league.scoreboard.matchups[0].week_start), new Date(this.store.league.scoreboard.matchups[0].week_end))
+    today: function () {
+      let today = new Date()
+      return today.toISOString().split('T')[0]
     }
-  },
-  mounted() {
-    this.getTeamPlayers()
   }
 }
 </script>

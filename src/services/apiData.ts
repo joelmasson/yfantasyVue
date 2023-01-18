@@ -187,21 +187,44 @@ type PlayerGameAverages = {
 type names = [string]
 
 interface unknownQuery { [key: string]: any }
-
-export default async function getPlayerAverages(matchData: unknownQuery, numberOfGames:number, sortBy:string) {
+/**
+ * 
+ * @param matchData Values that match player attributes eg. {name:[list,of,names]} 
+ * @param numberOfGames Number of games that are averaged
+ * @param sortBy Which value the players should be sorted by
+ * @param start Start game number for the previous games
+ * @param end Last game number for the previous games
+ * @param stats Return the players's previous stats
+ * @returns 
+ */
+export default async function getPlayerAverages(matchData: unknownQuery, numberOfGames:number, sortBy:string, start:number, end:number, stats:boolean) {
   let queryObj:unknownQuery = {};
   for (var key in matchData) {
     if (!queryObj.hasOwnProperty(key)) {
       queryObj[key] = {'$in':matchData[key]};
-      console.log(queryObj)
     }
   }
+  let season = start.toString().slice(0, 4) + '020000'
+  console.log(JSON.stringify({
+    data: queryObj,
+    statType: 'averages',
+    sortBy: sortBy,
+    limit: numberOfGames,
+    season: parseInt(season),
+    start: start,
+    end:end,
+    stats:stats
+  }))
   try {
     const { data, status } = await Axios.post<PlayerGameAverages>('/api/players', {
         data: queryObj,
         statType: 'averages',
         sortBy: sortBy,
         limit: numberOfGames,
+        season: parseInt(season),
+        start: start,
+        end:end,
+        stats:stats
       }
     );
     return data;

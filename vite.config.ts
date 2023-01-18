@@ -22,7 +22,7 @@ export default defineConfig({
     },
     hmr: {
       clientPort: 443,
-      host:'e9b3-2607-fea8-92df-8f00-cc32-1e17-6a4d-9b2f.ngrok.io'
+      host:'b604-70-51-218-149.ngrok.io'
     },
     watch: {
       usePolling: true

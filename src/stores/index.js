@@ -37,7 +37,6 @@ export const useStore = defineStore('main', {
         },
         async getProjections() {
             let dates = gameDays(this.league.scoreboard.matchups[0].week_start, this.league.scoreboard.matchups[0].week_end)
-            console.log(this.projections)
             if (this.projections.length === 0){
                 let dailyProjectionPromise = dates.map(day => {
                 return getDailyProjection(day)
@@ -46,10 +45,10 @@ export const useStore = defineStore('main', {
                 if (response[0].value === 'Request failed with status code 403'){
                     this.projections = 'Out of call volume quota.'
                 } else {
-                    let players = response.map(days=>{
+                    let days = response.filter(day => {if(day.value.length > 0){return day}}).map(day=>{
                         return {
-                            date: days[0].Day,
-                            players: days.map(player => {
+                            date: day.value[0].Day,
+                            players: day.value.map(player => {
                                 return {
                                     name:player.Name,
                                     team:player.Team,
@@ -59,7 +58,7 @@ export const useStore = defineStore('main', {
                             })
                         }
                     })
-                    this.projections = response
+                    this.projections = days
                 }                
               })
             }

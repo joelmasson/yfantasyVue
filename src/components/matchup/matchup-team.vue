@@ -70,7 +70,7 @@ export default {
   setup() {
     const route = useRoute()
     const store = useStore()
-    store.getProjections(gameDays(this.store.league.scoreboard.matchups[0].week_start, this.store.league.scoreboard.matchups[0].week_end))
+    store.getProjections(gameDays(store.league.scoreboard.matchups[0].week_start, store.league.scoreboard.matchups[0].week_end))
     return { store, route }
   },
   data() {
@@ -84,7 +84,7 @@ export default {
       averages: []
     }
   },
-  props: ['teamID'],
+  props: ['team_id'],
   components: {
     TeamHeader,
     FilterMenu,

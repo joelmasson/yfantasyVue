@@ -1,8 +1,10 @@
 <template>
   <div class="bg-white shadow-md rounded-lg" v-if="players.length > 0 && weekMatches.length > 0">
-    <Replacements :availableSpots="availableSpots"></Replacements>
-    <MatchupProjectionWeek :settings="store.league.settings.stat_categories" :players="players" :schedule="weekMatches" :scoreboard="scoreboard"></MatchupProjectionWeek>
-    <MatchupPlayer v-for="player in players" :key="player.player_id" :player="player" :dates="gameDay" :schedule="weekMatches">
+    <Replacements :teamGames="teamGames"></Replacements>
+    <MatchupProjectionWeek :settings="store.league.settings.stat_categories" :players="players" :schedule="weekMatches"
+      :scoreboard="scoreboard"></MatchupProjectionWeek>
+    <MatchupPlayer v-for="player in players" :key="player.player_id" :player="player" :dates="gameDay"
+      :schedule="weekMatches">
     </MatchupPlayer>
   </div>
 </template>
@@ -35,6 +37,7 @@ export default {
     let NHLStandings = ref({})
     let NHLSchedule = ref({})
     let weekMatches = ref({})
+    let teamGames = ref({})
     let roster = ref([{ position: "C", count: 2 }, { position: "RW", count: 2 }, { position: "LW", count: 2 }, { position: "D", count: 4 }, { position: "Util", count: 1 }, { position: "G", count: 2 }],)
 
     // store.getProjections()
@@ -66,13 +69,14 @@ export default {
           return response.data.roster
         })
       })
-      
+
       Promise.allSettled(startingLineupPromise).then(response => {
         let roster = response[0].value.map(player => {
           return {
             ...player,
             projections: [],
             averages: [],
+            previousGames: [],
             starting: []
           }
         })
@@ -92,7 +96,7 @@ export default {
         getWeekSchedule()
       })
     }
-    function getNHLStandings () {
+    function getNHLStandings() {
       Axios.get('https://statsapi.web.nhl.com/api/v1/standings').then((response) => {
         NHLStandings.value = response.data.records.flatMap(date => {
           return date.teamRecords
@@ -101,7 +105,7 @@ export default {
         console.log('error', error)
       })
     }
-    function getNHLSchedule () {
+    function getNHLSchedule() {
       Axios.get('https://statsapi.web.nhl.com/api/v1/schedule?startDate=' + store.league.start_date + '&endDate=' + store.league.end_date).then((response) => {
         NHLSchedule.value = response.data.dates.flatMap(date => {
           return date.games
@@ -110,7 +114,7 @@ export default {
         console.log('error', error)
       })
     }
-    function getWeekSchedule () {
+    function getWeekSchedule() {
       function compare(a, b) {
         if (a.games > b.games) {
           return -1
@@ -129,16 +133,34 @@ export default {
           game.teams.home.sos = gameSOS(game.teams.home.team.id, arrayOfGames)
           return game
         })
-
-        let gamesPerTeam = arrayOfGames.reduce(function (sums, entry) {
+        let gamesPerTeam = response.data.dates.filter(date => {
+          let day = new Date(date.date+'T00:00:00')
+          let today = new Date()
+          today.setHours(0, 0, 0, 0)
+          if (day >= today) {
+            return date
+          }
+        }).flatMap(date => {
+          return date.games
+        }).reduce(function (sums, entry) {
           sums[entry.teams.home.team.name] = (sums[entry.teams.home.team.name] || 0) + 1;
           sums[entry.teams.away.team.name] = (sums[entry.teams.away.team.name] || 0) + 1;
           return sums
         }, {})
-        self.availableTeams = Object.keys(gamesPerTeam).map(team => {
+
+        teamGames.value = Object.keys(gamesPerTeam).map(team => {
+          let id;
+          arrayOfGames.some(game => {
+            if (game.teams.home.team.name === team) {
+              id = game.teams.home.team.id
+            } else if (game.teams.away.team.name === team) {
+              id = game.teams.away.team.id
+            }
+          })
           return {
             team: team,
-            games: gamesPerTeam[team]
+            games: gamesPerTeam[team],
+            id: id
           }
         }).map(team => {
           let teamGames = arrayOfGames.filter(game => {
@@ -156,12 +178,13 @@ export default {
           team.sos = sosRating
           return team
         }).sort(compare)
+        console.log(teamGames)
         playerAverages()
       }).catch((error) => {
         console.log('error', error)
       })
     }
-    function gameSOS (opponent, games) {
+    function gameSOS(opponent, games) {
       // Get Opponent's Schedule
       let opponentSchedule = games.filter(game => {
         if (game.teams.home.team.id === opponent) {
@@ -236,13 +259,21 @@ export default {
     }
     function playerAverages() {
       let playerNames = players.value.map(player => player.name.full)
-      getPlayerAverages({name:playerNames}, 3, 'GAME_SCORE').then(response => {
+      let gamesPlayed = weekMatches.value.filter(game => {
+        if (game.status.detailedState === 'Final') {
+          return game
+        }
+      })
+      getPlayerAverages({ name: playerNames }, 3, 'GAME_SCORE', gamesPlayed[0].gamePk, gamesPlayed[gamesPlayed.length - 1].gamePk, true).then(response => {
+        console.log(response)
         players.value = players.value.map(player => {
-          player.averages = response.filter(averagedStatline => {
-            if (player.name.full === averagedStatline.name) {
+          let returnedPlayer = response.filter(APIPlayer => {
+            if (player.name.full === APIPlayer.name) {
               return player
             }
-          })[0].previousGames
+          })[0]
+          player.averages = returnedPlayer.averages
+          player.previousGames = returnedPlayer.previousGames
           return player
         })
         findAvailableSpots()
@@ -259,7 +290,7 @@ export default {
       getNHLStandings();
       getNHLSchedule();
     });
-    return { store, route, players, weekMatches, scoreboard, gameDay, availableSpots }
+    return { store, route, players, weekMatches, scoreboard, gameDay, availableSpots, teamGames }
   },
   data() {
     return {

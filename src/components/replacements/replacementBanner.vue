@@ -20,10 +20,26 @@ export default {
     methods: {
         getReplacements() {
             console.log('fetch')
+        },
+        getPlayersWithMaxGamesLeft() {
+            let games = this.teamGames[0].games
+            let teamIds = this.teamGames.filter(team =>{
+                if(team.games === games){
+                    return team.id
+                }
+            })
+            // TODO: fetch players
         }
     },
-    props: ['availableSpots'],
+    props: ['teamGames'],
     components: { ReplacementsPopup },
+    computed: {
+        teamIdsByNumberOfGames: function () {
+            return this.teamGames.map(team => {
+              
+            })
+        }
+    }
 }
 </script>
     

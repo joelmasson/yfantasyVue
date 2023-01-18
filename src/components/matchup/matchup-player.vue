@@ -69,6 +69,14 @@ export default {
           }
         })
         let displayedStat = gameDay.map(match => {
+          let playedGame = this.player.previousGames.filter(game => {
+            if (game.gamePk === match.gamePk){
+              return game
+            }
+          })
+          if (playedGame.length === 1){
+            return playedGame[0].GAME_SCORE.toFixed(2)
+          }
           if (match !== undefined){
             if(match.teams.home.team.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")  === this.player.editorial_team_full_name){
               return (this.player.averages.GAME_SCORE * (1 -  match.teams.away.sos)).toFixed(2)

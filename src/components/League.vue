@@ -113,13 +113,15 @@ export default {
         })
     },
     getCurrentSeason: function () {
+      console.log('season')
       let self = this
       Axios.get('/api/season/' + this.route.params.game_id)
         .then(response => {
           let today = new Date()
+          // self.getSeasonPlayers()
           if (response.data.error === 'Season not found') {
             self.getCurrentExternalSeason()
-            // self.getSeasonPlayers()
+            
           } else {
             // league has started
             if (today > new Date(response.data.startDate) && response.data !== 'No PBP available') {
@@ -138,25 +140,6 @@ export default {
           console.log('error', error)
         })
     },
-    // updateStore: function () {
-    //   let data = {
-    //     settings: this.league.settings,
-    //     teams: this.league.standings.map(team => {
-    //       return {name: team.name, team_id: team.team_id}
-    //     }),
-    //     league: this.league,
-    //     league_keys: this.league_keys
-    //   }
-    //   store.$patch((state) => {
-    //     state.positions = leagueData.settings.roster_positions
-    //     state.categories = leagueData.settings.stat_categories
-    //     // state.modifiers = leagueData.settings.stat_modifiers
-    //     state.teams = leagueData.teams
-    //     state.league = leagueData.league
-    //     state.league_keys = leagueData.league_keys
-    //   })
-    //   this.$store.commit('setLeagueData', data)
-    // },
     saveSeason: function () {
       let self = this
       let seasonData = {
@@ -240,10 +223,11 @@ export default {
       })
     },
     getSeasonPlayers: function () {
-      let season = self.league.season + (parseInt(self.league.season) + 1)
-      Axios.get('/api/players' + season)
+      console.log('get')
+      let season = this.store.league.season + (parseInt(this.store.league.season) + 1)
+      Axios.get('/api/players/' + season)
         .then(response => {
-          console.log(response)
+          console.log('players',response)
         }).catch((error) => {
           console.log(error)
         })

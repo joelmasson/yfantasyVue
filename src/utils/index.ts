@@ -61,8 +61,6 @@ export function YahooCategoryToAPIStat(name: string, averages: GameEvents) {
       return averages["HIT"];
     case "Blocks":
       return averages["BLOCKED_SHOT"];
-    case "Wins":
-      return averages["GOAL_ALLOWED"] > averages["ON_ICE_GOAL"] ? 0 : 1;
     case "Goals Against":
       return averages["GOAL_ALLOWED"];
     case "Goals Against Average":

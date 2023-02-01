@@ -12,13 +12,13 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
+                <tr v-if="actuals.length > 0">
                     <td class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         v-for="stat in actuals" :key="stat.stat_id">
-                        {{ stat.value }}
+                        {{ stat.value === '' ? 0 : stat.value }}
                     </td>
                 </tr>
-                <tr>
+                <tr v-if="projections.length > 0">
                     <td class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         v-for="stat in projections" :key="stat.stat_id">
                         {{ stat.value }}
@@ -44,6 +44,9 @@ export default {
     props: ['settings', 'players', 'schedule', 'scoreboard'],
     computed: {
         actuals: function () {
+            if (this.scoreboard === null) {
+                return []
+            }
             return this.scoreboard.filter(matchup => {
                 if (matchup.teams[0].team_id === this.route.params.team_id) {
                     return matchup
@@ -60,6 +63,9 @@ export default {
         },
         projections: function () {
             let stats = this.settings.map(stat => {
+                if (Object.keys(this.players).length === 0 || Object.keys(this.schedule).length === 0) {
+                    return { name: stat.name, value: 0 }
+                }
                 let value = this.players.map(player => {
                     let playerStats = player.starting.map(date => { // Loop over each day in the week
                         let match = this.schedule.filter(match => {
@@ -68,8 +74,7 @@ export default {
                                     return match
                                 }
                             }
-                        })
-                        match = match.map(match => {
+                        }).map(match => {
                             if (match.status.detailedState === 'Final') {
                                 let gameStats = player.previousGames.find(previousGame => previousGame.gamePk === match.gamePk)
                                 if (gameStats !== undefined) {
@@ -85,6 +90,7 @@ export default {
                                 if (isNaN(statValue) || statValue === undefined) {
                                     statValue = 0
                                 }
+
                                 if (match.teams.home.team.name === player.editorial_team_full_name) {
                                     return (statValue * (1 - match.teams.away.sos))
                                 } else if (match.teams.away.team.name === player.editorial_team_full_name) {

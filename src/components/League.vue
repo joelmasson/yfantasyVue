@@ -1,8 +1,8 @@
 <template>
   <div>
-      <Standings :standings='this.store.league'></Standings>
-      <Matchups :league='this.store.league' @selectedWeek="updateSelectedWeek"></Matchups>
-    </div>
+    <Standings :standings='this.store.league'></Standings>
+    <Matchups :league='this.store.league' @selectedWeek="updateSelectedWeek"></Matchups>
+  </div>
 </template>
 <script>
 import Axios from 'axios'
@@ -19,7 +19,7 @@ export default {
     store.getYahooLeague(route.params.game_id, route.params.league_id)
     return { store, route }
   },
-  data () {
+  data() {
     return {
       league: {
         scoreboard: {
@@ -121,7 +121,7 @@ export default {
           // self.getSeasonPlayers()
           if (response.data.error === 'Season not found') {
             self.getCurrentExternalSeason()
-            
+
           } else {
             // league has started
             if (today > new Date(response.data.startDate) && response.data !== 'No PBP available') {
@@ -188,7 +188,7 @@ export default {
       }).then((response) => {
         let today = new Date()
         if (today > new Date(self.dates[1].date)) {
-        // if (response.data !== 'No PBP available') {
+          // if (response.data !== 'No PBP available') {
           self.dates = self.dates.slice(1)
           self.getExtenalPlayByPlay(self.dates[0].date, self.dates[0].date)
         }
@@ -227,7 +227,7 @@ export default {
       let season = this.store.league.season + (parseInt(this.store.league.season) + 1)
       Axios.get('/api/players/' + season)
         .then(response => {
-          console.log('players',response)
+          console.log('players', response)
         }).catch((error) => {
           console.log(error)
         })
@@ -243,7 +243,7 @@ export default {
         let teams = response.data
         let players = teams.map(team => {
           return team.players.map(player => {
-            return {name: player.name.full, fantasyTeamId: player.ownership.owner_team_key}
+            return { name: player.name.full, fantasyTeamId: player.ownership.owner_team_key }
           })
         }).flat()
         this.setFantasyOwnership(players)
@@ -262,6 +262,7 @@ export default {
       // })
     },
     setFantasyOwnership: function (players) {
+      console.log('update')
       Axios.post('/api/players', {
         action: 'updateOwnership',
         players: players
@@ -274,7 +275,7 @@ export default {
       this.getMatchups(value)
     }
   },
-  mounted () {
+  mounted() {
     this.getCurrentSeason()
     this.getMatchups()
     this.getYahooOwnership()

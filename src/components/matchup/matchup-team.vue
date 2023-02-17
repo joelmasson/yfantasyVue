@@ -46,13 +46,14 @@
         </thead>
         <tbody>
           <Player v-for="(player) in player_type.players" :key="player.player_id" :player="player" :team="team"
-            :allCategories="false"></Player>
+            :allCategories="false" :games="games"></Player>
         </tbody>
       </table>
     </div>
   </div>
 </template>
 <script>
+import { toRaw } from 'vue';
 import { useRoute } from 'vue-router'
 import { useStore } from '../../stores/index.js'
 import { statIdToProjection, gameDays } from '../../utils/index'
@@ -63,7 +64,8 @@ import Player from '../Player.vue'
 import Axios from 'axios'
 
 
-import getPlayerAverages from '../../services/apiData';
+import { getPlayerAverages, getWeekRoster } from '../../services/apiData';
+import standardizeDate from '../../utils/standardizeDate'
 
 export default {
   name: 'MatchupTeam',
@@ -81,38 +83,58 @@ export default {
       team: [],
       players: [],
       projectionsTotals: {},
-      averages: []
+      averages: [],
+      roster: []
     }
   },
-  props: ['team_id'],
+  props: ['team_id', 'games', 'gameDays'],
   components: {
     TeamHeader,
     FilterMenu,
     Player
   },
   methods: {
-    getTeamPlayers: function () {
-      let self = this
-      Axios.post('/api/yahoo/players/teams', {
-        team_key: self.game_id + '.l.' + self.league_id + '.t.' + self.team_id,
-        subresources: ['stats']
-      })
-        .then((response) => {
-          console.log(response)
-          self.team = response.data[0]
-          self.players = response.data[0].players.map(player => {
-            return {
-              ...player,
-              projections: [],
-              averages: []
+    getStartingLineup() {
+      let dates = this.gameDays.map(day => day.date)
+      getWeekRoster(dates, this.game_id, this.league_id, this.team_id).then(data => {
+        this.players = data
+        this.games.forEach(game => {
+          this.players.forEach(player => {
+            if (player.editorial_team_full_name === game.teams.away.team.name || player.editorial_team_full_name === game.teams.home.team.name) {
+              player.starting.forEach(gameDay => {
+                if (standardizeDate(gameDay.date) === standardizeDate(game.gameDate)) {
+                  gameDay.game_id = game.gamePk
+                  gameDay.status = game.status.detailedState
+                  if (player.editorial_team_full_name === game.teams.away.team.name) {
+                    gameDay.sos = game.teams.away.sos
+                  } else if (player.editorial_team_full_name === game.teams.home.team.name) {
+                    gameDay.sos = game.teams.home.sos
+                  }
+                }
+              })
             }
           })
-          // this.getProjections()
-          this.playerAverages()
         })
-        .catch((error) => {
-          console.log('error', error)
+        this.setRoster()
+        this.getPlayerStats()
+        this.playerAverages()
+      })
+    },
+    getPlayerStats: function () {
+      let self = this
+      let playerIds = [...this.players].map(player => {
+        return player.player_key
+      })
+      Axios.post('/api/yahoo/players/fetch', {
+        player_keys: playerIds,
+        subresources: ['stats']
+      }).then((response) => {
+        self.players.forEach(player => {
+          player.stats = response.data.find(playerStat => playerStat.player_id === player.player_id)?.stats
         })
+      }).catch((error) => {
+        console.log('error', error)
+      })
     },
     getProjections() {
       let self = this
@@ -138,7 +160,7 @@ export default {
             if (player.length > 0) {
               player = player.map(player => {
                 player.PowerPlayPoints = player.PowerPlayAssists + player.PowerPlayGoals
-                if (player.Games === 1){
+                if (player.Games === 1) {
                   player.GoaltendingSavePercentage = player.GoaltendingSaves / (player.GoaltendingSaves + player.GoaltendingGoalsAgainst)
                   player.GoaltendingGoalsAgainstAverage = player.GoaltendingGoalsAgainst
                 }
@@ -171,15 +193,15 @@ export default {
           })
           self.projectionsTotals = self.store.league.settings.stat_categories.map(cat => {
             let projectedStat = Object.keys(totals).filter(stat => {
-              if (statIdToProjection(cat.stat_id.toString()) === stat){
+              if (statIdToProjection(cat.stat_id.toString()) === stat) {
                 return totals[stat]
               }
             }).map(stat => {
               return totals[stat]
             })[0]
             return {
-              'display_name':cat.display_name,
-              'value':projectedStat === undefined ? 0 : projectedStat
+              'display_name': cat.display_name,
+              'value': projectedStat === undefined ? 0 : projectedStat
             }
           })
         })
@@ -187,21 +209,21 @@ export default {
     },
     playerAverages() {
       let self = this;
-      let playerNames = this.players.map(player => player.name.full)
-      getPlayerAverages(playerNames, 3, 'name').then(response => {
-        self.players.map(player => {
-          player.averages = response.filter(averagedStatline => {
-            if (player.name.full === averagedStatline.name) {
-              return player
-            }
-          })[0].previousGames
-          return player
+      console.log(this.players)
+      let playerNames = [...this.players].map(player => player.name.full)
+      let lastGameDayPlayed = this.games.findLast(game => game.status.detailedState === 'Final')
+      let games = toRaw(this.games)
+      lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(games[0].gamePk) - 1 : lastGameDayPlayed
+      getPlayerAverages({ name: playerNames }, 82, 'GAME_SCORE', parseInt(this.store.league.season + '020000'), lastGameDayPlayed, true).then(response => {
+        self.players.forEach(player => {
+          let playerData = response.find(averagedStatline => player.name.full === averagedStatline.name)
+          player.averages = playerData?.averages
+          player.previousGames = playerData?.previousGames
         })
+        this.$emit('roster', { team_id: this.team_id, players: self.players })
       })
-    }
-  },
-  computed: {
-    roster: function () {
+    },
+    setRoster: function () {
       let positions = Array.from(
         new Set(
           this.store.league.settings.stat_categories.map((category) => {
@@ -227,14 +249,11 @@ export default {
           }
         })
       })
-      return positionsObj
-    },
-    team_id: function () {
-      return this.teamID === undefined ? this.$route.params.team_id : this.teamID
-    },
+      this.roster = positionsObj
+    }
   },
   mounted() {
-    this.getTeamPlayers()
+    this.getStartingLineup()
   }
 }
 </script>

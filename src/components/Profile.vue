@@ -8,9 +8,9 @@
     <div>
       <div class="ml-4">
         <div class="text-sm font-medium text-gray-900">
-          <router-link :to="{ name: 'Player', params: { game_id: $route.params.game_id, player_id: id } }">
-            <h4>{{ name }}</h4>
-          </router-link>
+          <!-- <router-link :to="{ name: 'Player', params: { game_id: $route.params.game_id, player_id: id } }"> -->
+          <h4>{{ name }}</h4>
+          <!-- </router-link> -->
           <h5>{{ player.editorial_team_abbr }} - {{ positions }}</h5>
         </div>
         <div>

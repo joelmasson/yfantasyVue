@@ -36,7 +36,7 @@ import { YahooCategoryToAPIStat } from '../../utils/index'
 import TeamProfile from '../TeamProfile.vue'
 import standardizeDate from '../../utils/standardizeDate'
 export default {
-    name: 'matchupProjectionWeek',
+    name: 'weekProjections',
     props: ['settings', 'players', 'schedule', 'scoreboard', 'team_id'],
     setup(props) {
         const route = useRoute()
@@ -73,13 +73,13 @@ export default {
         projectedStats: function () {
             let players = toRaw(this.players)
             let stats = this.settings.map(stat => {
-                if (this.schedule === undefined || players.size === undefined || this.schedule.length === 0) {
+                if (this.schedule === undefined || Object.keys(players).length === 0 || this.schedule.length === 0) {
                     return { name: stat.name, value: 0 }
                 }
-                let value = [...players].map(player => {
-                    let playerStats = player.starting.filter(day => day.game_id !== '').map(match => { // Loop over each day in the week
+                let value = players.map(player => {
+                    let playerStats = player.starting.filter(day => day.gamePk !== '').map(match => { // Loop over each day in the week
                         if (match.status === 'Final') {
-                            let gameStats = player?.previousGames?.filter(previousGame => previousGame.gamePk === match.gamePk)[0]
+                            let gameStats = player.previousGames.filter(previousGame => previousGame.gamePk === match.gamePk)[0]
                             if (gameStats !== undefined) {
                                 let statValue = YahooCategoryToAPIStat(stat.name, gameStats)
                                 if (isNaN(statValue) || statValue === undefined || statValue === null) {
@@ -88,20 +88,23 @@ export default {
                                 return statValue
                             }
                             return 0
-                        } else {
+                        } else if (match.status === 'Scheduled') {
                             let statValue = YahooCategoryToAPIStat(stat.name, player.averages)
                             if (isNaN(statValue) || statValue === undefined || statValue === null) {
                                 statValue = 0
                             }
                             return statValue * (1 - match.sos)
+                        } else {
+                            return 0
                         }
-                        return statValue
                     })
                     let ps = playerStats.reduce((a, b) => {
                         return a + b
                     }, 0)
+
                     return ps
                 }).reduce((a, b) => a + b, 0).toFixed(2)
+
                 return { name: stat.name, value: value }
             })
             return stats

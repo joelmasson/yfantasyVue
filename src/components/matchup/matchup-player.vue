@@ -1,6 +1,13 @@
 <template>
   <div class="flex justify-start md:justify-center">
     <!-- <p class="text-xl content-center text-center p-2 m-auto w-2">{{player.selected_position}}</p> -->
+    <div v-if="route.name === 'Team'">
+      <button
+        :class="['block text-white focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800', player.selected ? `bg-red-700 hover:bg-red-800` : `bg-green-700 hover:bg-green-800`]"
+        type="button" @click="togglePlayer(player)">
+        {{ player.selected ? '-' : '+' }}
+      </button>
+    </div>
     <Profile :player="player"></Profile>
     <div
       class="flex group rounded-lg mx-1 my-1 transition-all duration-300 cursor-pointer justify-center w-20 hover:shadow-lg hover-dark-shadow border-2"
@@ -31,18 +38,22 @@
 </template>
 <script>
 import { useStore } from '../../stores/index.js'
+import { useRoute } from 'vue-router';
 import Profile from './../Profile.vue'
-import { statline } from '../../utils/index'
 
+import { statline } from '../../utils/index'
 import standardizeDate from '../../utils/standardizeDate'
+
 export default {
   name: 'MatchupPlayer',
   setup() {
+    const route = useRoute()
     const store = useStore()
-    return { store }
+    return { store, route }
   },
   data() {
     return {
+
     }
   },
   props: ['player', 'dates', 'schedule'],
@@ -60,7 +71,11 @@ export default {
       } else if (sos < 0.7) {
         return 'hover:bg-red-500 border-red-500'
       }
-    }
+    },
+    togglePlayer(player) {
+      this.player.selected = !this.player.selected
+      this.$emit('updatePlayer', player)
+    },
   },
   computed: {
     today: function () {

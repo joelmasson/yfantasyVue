@@ -184,47 +184,60 @@ type PlayerGameAverages = {
   data: Game[];
 };
 
-type names = [string]
+type names = [string];
 
-interface unknownQuery { [key: string]: any }
+interface unknownQuery {
+  [key: string]: any;
+}
 /**
- * 
- * @param matchData Values that match player attributes eg. {name:[list,of,names]} 
+ *
+ * @param matchData Values that match player attributes eg. {name:[list,of,names]}
  * @param numberOfGames Number of games that are averaged
  * @param sortBy Which value the players should be sorted by
  * @param start Start game number for the previous games
  * @param end Last game number for the previous games
  * @param stats Return the players's previous stats
- * @returns 
+ * @returns
  */
-export default async function getPlayerAverages(matchData: unknownQuery, numberOfGames:number, sortBy:string, start:number, end:number, stats:boolean) {
-  let queryObj:unknownQuery = {};
+export async function getPlayerAverages(
+  matchData: unknownQuery,
+  numberOfGames: number,
+  sortBy: string,
+  start: number,
+  end: number,
+  stats: boolean
+) {
+  let queryObj: unknownQuery = {};
   for (var key in matchData) {
     if (!queryObj.hasOwnProperty(key)) {
-      queryObj[key] = {'$in':matchData[key]};
+      queryObj[key] = { $in: matchData[key] };
     }
   }
-  let season = start.toString().slice(0, 4) + '020000'
-  console.log(JSON.stringify({
-    data: queryObj,
-    statType: 'averages',
-    sortBy: sortBy,
-    limit: numberOfGames,
-    season: parseInt(season),
-    start: start,
-    end:end,
-    stats:stats
-  }))
+  let season = start.toString().slice(0, 4) + "020000";
+  // console.log(
+  //   JSON.stringify({
+  //     data: queryObj,
+  //     statType: "averages",
+  //     sortBy: sortBy,
+  //     limit: numberOfGames,
+  //     season: parseInt(season),
+  //     start: start,
+  //     end: end,
+  //     stats: stats,
+  //   })
+  // );
   try {
-    const { data, status } = await Axios.post<PlayerGameAverages>('/api/players', {
+    const { data, status } = await Axios.post<PlayerGameAverages>(
+      "/api/players",
+      {
         data: queryObj,
-        statType: 'averages',
+        statType: "averages",
         sortBy: sortBy,
         limit: numberOfGames,
         season: parseInt(season),
         start: start,
-        end:end,
-        stats:stats
+        end: end,
+        stats: stats,
       }
     );
     return data;
@@ -236,5 +249,99 @@ export default async function getPlayerAverages(matchData: unknownQuery, numberO
       console.log("unexpected error: ", error);
       return "An unexpected error occurred";
     }
+  }
+}
+/**
+ *
+ * @param dates Values that match player attributes eg. {name:[list,of,names]}
+ * @param game_id Number of games that are averaged
+ * @param league_id Which value the players should be sorted by
+ * @param team_id Start game number for the previous games
+ * @returns
+ */
+export async function getWeekRoster(
+  dates: [string],
+  game_id: string,
+  league_id: string,
+  team_id: string
+) {
+  /* -----
+        Get all roster players and the days where they are starting from Yahoo
+      ---- */
+  let startingLineupPromise = dates.map((date) => {
+    let day = new Date(date);
+    day = day.toLocaleDateString("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return Axios.post("/api/yahoo/roster/players", {
+      team_key: game_id + ".l." + league_id + ".t." + team_id,
+      date: day,
+    }).then((response) => {
+      return response.data.roster;
+    });
+  });
+  try {
+    const data = Promise.allSettled(startingLineupPromise).then(
+      (response: unknownQuery) => {
+        console.log(response);
+        let roster = new Set();
+        response.forEach((day) => {
+          day.value.forEach((player) => {
+            if (roster.size === 0) {
+              roster.add({
+                ...player,
+                averages: [],
+                previousGames: [],
+                selected: true,
+                starting: [],
+                stats: [],
+              });
+            } else {
+              let RP = [...roster].find((rosteredPlayer) => {
+                if (rosteredPlayer.player_key === player.player_key) {
+                  return rosteredPlayer;
+                }
+              });
+              if (RP === undefined) {
+                roster.add({
+                  ...player,
+                  averages: [],
+                  previousGames: [],
+                  selected: true,
+                  starting: [],
+                });
+              }
+            }
+          });
+        });
+        response.forEach((day, i) => {
+          roster.forEach((player) => {
+            let dayPlayer = day.value.filter(
+              (gamePlayer: { player_id: any }) => {
+                if (gamePlayer.player_id === player.player_id) {
+                  return gamePlayer;
+                }
+              }
+            );
+            if (dayPlayer.length > 0) {
+              player.starting.push({
+                date: dates[i],
+                position: dayPlayer[0].selected_position,
+                game_id: "",
+                status: null,
+                sos: 0,
+              });
+            }
+          });
+        });
+        return roster;
+      }
+    );
+    return data;
+  } catch (error) {
+    console.log("unexpected error: ", error);
+    return "An unexpected error occurred";
   }
 }

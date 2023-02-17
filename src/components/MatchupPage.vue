@@ -1,13 +1,13 @@
 
 <template>
   <section>
-    <MatchupHeader :matchup="getMatch" :schedule="weeklySchedule"></MatchupHeader>
-    <Calender :dates="weeklySchedule"></Calender>
-    <!-- <SelectFilter :default="chosenStat" :label="'Sort by Stat'" :options="settings" @updateSelectFilter="updateFilter"></SelectFilter> -->
-    <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[0].team_id" :teams="proTeams" :settings="store.league.settings"></MatchupTeam>
-    <MatchupTeam :games="weeklySchedule" :chosenStat="chosenStat" :team_id="getMatch.teams[1].team_id" :teams="proTeams" :settings="store.league.settings"></MatchupTeam>
-    <!-- <p v-else>LOADING PLAY BY PLAY DATA...</p> -->
-    <!-- <Team v-for="team in getMatch.teams" :key="team.team_id" :teamID="team.team_id"></Team> -->
+    <MatchupHeader :gameDays="gameDays" :games="games" :matchup="matchup" :NHLStandings="NHLStandings">
+    </MatchupHeader>
+    <Calender :dates="gameDays"></Calender>
+    <div v-if="games.length > 0" v-for="team in matchup.teams">
+      <MatchupTeam :gameDays="gameDays" :games="games" :team_id="team.team_id" @roster="getRoster">
+      </MatchupTeam>
+    </div>
   </section>
 </template>
 <script>
@@ -17,8 +17,9 @@ import { useStore } from '../stores/index.js'
 import Calender from './calender/calender.vue'
 import MatchupHeader from './MatchupHeader.vue'
 import MatchupTeam from './matchup/matchup-team.vue'
-import TeamProfile from './TeamProfile.vue'
-import Team from './Team.vue'
+
+import gameSOS from '../utils/strenghtOfSchedule'
+import { APINHLStandings } from '../services/statsapi'
 
 // ui
 import SelectFilter from './ui/SelectFilter.vue'
@@ -27,7 +28,7 @@ import Axios from 'axios'
 export default {
   name: 'MatchupPage',
   components: {
-    MatchupHeader, TeamProfile, Team, Calender, MatchupTeam, SelectFilter
+    MatchupHeader, Calender, MatchupTeam, SelectFilter
   },
   setup() {
     const route = useRoute()
@@ -40,76 +41,51 @@ export default {
       chosenStat: 'GAME_SCORE',
       playbyplays: [],
       proTeams: [],
-      schedule: []
+      games: [],
+      matchup: [],
+      NHLStandings: [],
     }
   },
   methods: {
-    // getPlaybyPlays: function () {
-    //   let self = this
-    //   let end = new Date(self.weeklySchedule[self.weeklySchedule.length - 1].date)
-    //   end = new Date(end.setDate(end.getDate() + 3))
-    //   end = end.getFullYear() + '-' + [end.getMonth() + 1] + '-' + end.getDate()
-    //   // console.log(end)
-    //   Axios.post('/api/playbyplay/', {
-    //     action: 'internal',
-    //     start: self.weeklySchedule[0].date,
-    //     end: end
-    //   }).then((response) => {
-    //     console.log('pbp', response.data)
-    //     self.playbyplays = response.data
-    //     self.setGames()
-    //   }).catch((error) => {
-    //     console.log('error', error)
-    //   })
-    // },
-    getProTeams: function () {
+    getWeekGames: function () {
       let self = this
-      Axios.get('/api/team/all')
-        .then(response => {
-          self.proTeams = response.data
-          // self.getPlaybyPlays()
-        }).catch(err => {
-          console.log(err)
+      Axios.get('https://statsapi.web.nhl.com/api/v1/schedule?startDate=' + this.store.league.scoreboard.matchups[0].week_start + '&endDate=' + this.store.league.scoreboard.matchups[0].week_end).then((response) => {
+        let games = response.data.dates.flatMap(date => {
+          return date.games
         })
+        self.games = games.map(game => {
+          game.teams.away.sos = gameSOS(game.teams.away.team.id, games, self.NHLStandings)
+          game.teams.home.sos = gameSOS(game.teams.home.team.id, games, self.NHLStandings)
+          return game
+        })
+      })
     },
-    // setGames: function () {
-    //   let schedule = this.weeklySchedule.map(day => {
-    //     day.games = this.playbyplays.filter(game => {
-    //       let gameDay = new Date(game.timestamp)
-    //       let numericDay = '0' + gameDay.getDate()
-    //       numericDay = numericDay.slice(-2)
-    //       let GD = gameDay.getFullYear() + '-' + [gameDay.getMonth() + 1] + '-' + numericDay
-    //       if (GD === day.date) {
-    //         game.home = this.proTeams.filter(proTeam => {
-    //           if (parseInt(proTeam.id) === parseInt(game.home)) {
-    //             return proTeam
-    //           }
-    //         })[0]
-    //         game.away = this.proTeams.filter(proTeam => {
-    //           if (parseInt(proTeam.id) === parseInt(game.away)) {
-    //             return proTeam
-    //           }
-    //         })[0]
-    //         return game
-    //       }
-    //     })
-    //     return day
-    //   })
-    //   this.schedule = schedule
-    // },
-    updateFilter: function (value) {
-      this.chosenStat = value
+    getNHLStandings: function () {
+      let standingsData = APINHLStandings().then(response => {
+        this.NHLStandings = response.data.records.flatMap(date => {
+          return date.teamRecords
+        })
+        this.getWeekGames()
+      });
+    },
+    getRoster: function (playerData) {
+      console.log(playerData)
+      this.matchup.teams.forEach(team => {
+        if (playerData.team_id === team.team_id) {
+          team.players = playerData.players
+        }
+      })
+    },
+    getMatch: function () {
+      let homeId = this.$route.params.matchup.split('-')[0]
+      this.matchup = this.store.getMatch(homeId)
     }
   },
   computed: {
-    getMatch() {
-      let homeId = this.$route.params.matchup.split('-')[0]
-      return this.store.getMatch(homeId)
-    },
-    weeklySchedule() {
-      let end = new Date(this.getMatch.week_end + 'T00:00:00.000-04:00')
+    gameDays() {
+      let end = new Date(this.matchup.week_end + 'T00:00:00.000-04:00')
       end = new Date(end.setDate(end.getDate() + 1))
-      let start = new Date(this.getMatch.week_start + 'T00:00:00.000-05:00')
+      let start = new Date(this.matchup.week_start + 'T00:00:00.000-05:00')
       let dates = []
       let dateMove = new Date(start)
       let strDate = start
@@ -131,7 +107,9 @@ export default {
     }
   },
   mounted() {
-    this.getProTeams()
+    this.getNHLStandings()
+    this.getMatch()
+    // this.getTeamPlayers()
   }
 }
 </script>

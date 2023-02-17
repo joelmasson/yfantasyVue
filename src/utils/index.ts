@@ -39,6 +39,9 @@ export function statIdToProjection(category: string) {
 }
 
 export function YahooCategoryToAPIStat(name: string, averages: GameEvents) {
+  if (averages === undefined) {
+    return 0;
+  }
   switch (name) {
     case "Goals":
       return averages.GOAL;
@@ -46,8 +49,19 @@ export function YahooCategoryToAPIStat(name: string, averages: GameEvents) {
       return averages.ASSIST + averages.ASSIST_2;
     case "Plus/Minus":
       return averages.PLUS_MINUS;
+    case "PlusMinus":
+      return averages.PLUS_MINUS;
     case "Penalty Minutes":
       return averages.PENALTY_MINUTES;
+    case "PenaltyMinutes":
+      return averages.PENALTY_MINUTES;
+    case "PowerPlayPoints":
+      return (
+        averages["5_ON_4_GOAL"] +
+        averages["5_ON_3_GOAL"] +
+        averages["5_ON_4_ASSIST"] +
+        averages["5_ON_4_ASSIST_2"]
+      );
     case "Powerplay Points":
       return (
         averages["5_ON_4_GOAL"] +
@@ -55,6 +69,8 @@ export function YahooCategoryToAPIStat(name: string, averages: GameEvents) {
         averages["5_ON_4_ASSIST"] +
         averages["5_ON_4_ASSIST_2"]
       );
+    case "FaceoffsWon":
+      return averages["FACEOFF_WIN"];
     case "Faceoffs Won":
       return averages["FACEOFF_WIN"];
     case "Hits":
@@ -63,15 +79,27 @@ export function YahooCategoryToAPIStat(name: string, averages: GameEvents) {
       return averages["BLOCKED_SHOT"];
     case "Goals Against":
       return averages["GOAL_ALLOWED"];
+    case "GoaltendingGoalsAgainst":
+      return averages["GOAL_ALLOWED"];
     case "Goals Against Average":
+      return averages["GOALS_AGAINST_AVERAGE"];
+    case "GoaltendingGoalsAgainstAverage":
       return averages["GOALS_AGAINST_AVERAGE"];
     case "Saves":
       return averages["SAVE"];
+    case "GoaltendingSaves":
+      return averages["SAVE"];
     case "Shots Against":
+      return averages["SAVE"] + averages["GOAL_ALLOWED"];
+    case "GoaltendingShotsAgainst":
       return averages["SAVE"] + averages["GOAL_ALLOWED"];
     case "Save Percentage":
       return averages["SAVE_PERCENTAGE"];
+    case "GoaltendingSavePercentage":
+      return averages["SAVE_PERCENTAGE"];
     case "Shutouts":
+      return averages["SHUTOUT"];
+    case "GoaltendingShutouts":
       return averages["SHUTOUT"];
     default:
       return 0;
@@ -119,7 +147,6 @@ export function gameDays(start: string, end: string) {
   function getDates(start: Date, end: Date) {
     let arr = [];
     end = new Date(end.setDate(end.getDate() + 2));
-    console.log(start);
     for (
       start;
       start < end;

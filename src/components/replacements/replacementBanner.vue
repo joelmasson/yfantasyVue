@@ -2,59 +2,66 @@
     <div class="flex justify-start md:justify-center">
         <button data-modal-target="defaultModal" data-modal-toggle="defaultModal"
             class="block text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-            type="button" @click="getPlayersWithMaxGamesLeft()">
+            type="button" @click="getPlayers()">
             Get Players with X games left
         </button>
     </div>
-    <ReplacementsPopup v-if="showModal" @close="showModal = false" :players='players' :dates="dates"
-        :schedule="schedule">
+    <ReplacementsPopup v-if="showModal" @close="showModal = false" @addPlayer="addPlayer">
     </ReplacementsPopup>
 </template>
 <script>
 import { ref, defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router';
 import { useStore } from '../../stores/index.js';
-// import ReplacementsPopup from './replacementsPopup.vue';
-import getPlayerAverages from '../../services/apiData';
-
-const asyncModal = defineAsyncComponent(() => import('./replacementsPopup.vue'))
-
 
 export default {
     name: 'ReplacementsBanner',
-    setup() {
+    props: ['teamGames', 'schedule', 'dates'],
+    emits: ['addPlayer'],
+    setup(props) {
         const route = useRoute()
         const store = useStore()
-        let players = ref([])
-        return { store, route, players }
+        let games = 0
+        return { store, route }
     }, data: function () {
         return {
-            showModal: false
+            showModal: false,
+            loading: false,
+            maxGamesLeft: 0,
         }
     },
     methods: {
-        getPlayersWithMaxGamesLeft() {
-            this.showModal = true
+        addPlayer(player) {
+            this.$emit('addPlayer', player)
+        },
+        setMaxGamesLeft() {
+            this.maxGamesLeft = this.teamGames === undefined ? 0 : this.teamGames[0]
+        },
+        getPlayers() {
+            this.showModal = !this.showModal;
             let games = this.teamGames[0].games
-            let teamIds = this.teamGames.filter(team => {
+            let teamIds = this.teamGames.filter((team) => {
                 if (team.games === games) {
-                    return team
+                    return team;
                 }
-            }).map(team => team.id)
-            let matchData = {
-                fantasyTeamId: [null, this.store.league.league_key + '.t.' + this.route.params.team_id],
-                position: ['Forward', 'Defenseman'],
-                currentTeamId: teamIds
+            }).map((team) => team.id);
+            let lastGameDayPlayed = this.schedule.findLast(
+                (game) => game.status.detailedState === "Final"
+            );
+            lastGameDayPlayed =
+                lastGameDayPlayed === undefined
+                    ? parseInt(this.schedule[0].gamePk) - 1
+                    : lastGameDayPlayed;
+            if (this.store.replacements.length === 0) {
+                this.store.getPlayersWithXGamesLeft(teamIds, this.store.league.league_key, this.route.params.team_id, lastGameDayPlayed, this.store.league.season)
+            } else {
+
             }
-            console.log(matchData)
-            let lastGameDayPlayed = this.schedule.findLast(game => game.status.detailedState === 'Final')
-            lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(this.schedule[0].gamePk) - 1 : lastGameDayPlayed
-            getPlayerAverages(matchData, 82, 'GAME_SCORE', this.store.league.season + '020000', lastGameDayPlayed.gamePk, true).then(response => {
-                this.players = response
-            })
         }
     },
-    props: ['teamGames', 'schedule', 'dates'],
-    components: { ReplacementsPopup: defineAsyncComponent(() => import('./replacementsPopup.vue')) }
+    components: { ReplacementsPopup: defineAsyncComponent(() => import('./replacementsPopup.vue')) },
+    mounted() {
+        this.setMaxGamesLeft()
+    }
 }
 </script>

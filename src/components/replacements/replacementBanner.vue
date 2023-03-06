@@ -10,7 +10,7 @@
     </ReplacementsPopup>
 </template>
 <script>
-import { ref, defineAsyncComponent } from 'vue'
+import { defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router';
 import { useStore } from '../../stores/index.js';
 
@@ -52,7 +52,7 @@ export default {
                 lastGameDayPlayed === undefined
                     ? parseInt(this.schedule[0].gamePk) - 1
                     : lastGameDayPlayed;
-            if (this.store.replacements.length === 0) {
+            if (this.store.replacements.players.length === 0) {
                 this.store.getPlayersWithXGamesLeft(teamIds, this.store.league.league_key, this.route.params.team_id, lastGameDayPlayed, this.store.league.season)
             } else {
 

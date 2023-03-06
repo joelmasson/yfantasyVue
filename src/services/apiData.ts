@@ -329,7 +329,7 @@ export async function getWeekRoster(
               player.starting.push({
                 date: dates[i],
                 position: dayPlayer[0].selected_position,
-                game_id: "",
+                gamePk: "",
                 status: null,
                 sos: 0,
               });

@@ -18,19 +18,16 @@
         <span class="relative inline-flex rounded-full h-3 w-3 bg-purple-100"></span>
       </span>
       <div class="flex items-center px-4 py-4">
-        <div class="text-center" v-if="day.gameDay !== undefined">
+        <div class="text-center">
           <p class=" text-gray-900 group-hover:text-gray-100 text-sm transition-all duration-300">
-            {{ day.gameDay.matchup }}
+            {{ day.match }}
           </p>
           <p class=" text-gray-900 group-hover:text-gray-100 mt-3 group-hover:font-bold transition-all duration-300 ">
-            {{ day.gameDay.teams.home.score }} - {{ day.gameDay.teams.away.score }}
+            {{ day.score }}
           </p>
           <p class=" text-gray-900 group-hover:text-gray-100 mt-3 group-hover:font-bold transition-all duration-300 ">
             {{ day.stat }}
           </p>
-          <!-- <p v-else class=" text-gray-900 group-hover:text-gray-100 mt-3 group-hover:font-bold transition-all duration-300 " >
-                -
-            </p> -->
         </div>
       </div>
     </div>
@@ -41,7 +38,6 @@ import { useStore } from '../../stores/index.js'
 import { useRoute } from 'vue-router';
 import Profile from './../Profile.vue'
 
-import { statline } from '../../utils/index'
 import standardizeDate from '../../utils/standardizeDate'
 
 export default {
@@ -83,6 +79,19 @@ export default {
       return today.toISOString().split('T')[0]
     },
     games: function () {
+      if (this.player.starting === undefined || this.player.previousGames.length === 0) {
+        return this.dates.map(day => { return { date: day, match: '', score: '', stat: undefined } })
+      }
+      return this.player.starting.map(day => {
+        let playedGame = this.player.previousGames.find(game => game.gamePk === day.gamePk)
+        if (playedGame === undefined) {
+          return day
+        }
+        return {
+          ...day,
+          stat: playedGame !== undefined ? playedGame.GAME_SCORE.toFixed(2) : undefined
+        }
+      })
       return this.dates.map(date => {
         if (Object.keys(this.schedule).length === 0) {
           return { date: date, sos: null }

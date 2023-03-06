@@ -1,9 +1,9 @@
 <template>
   <div class="bg-white shadow-md rounded-lg">
-    <Replacements :teamGames="teamGames" :schedule="weekMatches" :dates="gameDay" @addPlayer="addPlayer">
+    <Replacements :teamGames="teamGames" :schedule="games" :dates="gameDay" @addPlayer="addPlayer">
     </Replacements>
-    <WeekProjections :settings="store.league.settings.stat_categories" :players="projectedPlayers"
-      :schedule="weekMatches" :scoreboard="scoreboard" :team_id="route.params.team_id"></WeekProjections>
+    <WeekProjections :settings="store.league.settings.stat_categories" :players="projectedPlayers" :schedule="games"
+      :scoreboard="scoreboard" :team_id="route.params.team_id"></WeekProjections>
     <div class="flex justify-start md:justify-center">
       <div class="w-36"></div>
       <div class="flex group mx-1 my-1 justify-center w-20" v-for="(day, i) in gameDay" :key="i">
@@ -11,10 +11,10 @@
       </div>
     </div>
     <MatchupPlayer v-if="players.length === 0" v-for="(player, i) in emptyRoster" :key="i" :player="player"
-      :dates="gameDay" :schedule="weekMatches">
+      :dates="gameDay" :schedule="games">
     </MatchupPlayer>
     <MatchupPlayer v-else v-for="player in players" :key="player.player_id" :player="player" :dates="gameDay"
-      :schedule="weekMatches" @updatePlayer="updatePlayer">
+      :schedule="games" @updatePlayer="updatePlayer">
     </MatchupPlayer>
   </div>
 </template>
@@ -49,7 +49,6 @@ export default {
     let players = ref([])
     let NHLStandings = {}
     let games = ref({})
-    let weekMatches = ref({})
     let teamGames = ref({})
     let roster = ref([{ position: "C", count: 2 }, { position: "RW", count: 2 }, { position: "LW", count: 2 }, { position: "D", count: 4 }, { position: "Util", count: 1 }, { position: "G", count: 2 }],)
     let emptyRoster = ref(roster.value.flatMap(position => {
@@ -85,10 +84,13 @@ export default {
               player.starting.forEach(gameDay => {
                 if (standardizeDate(gameDay.date) === standardizeDate(game.gameDate)) {
                   gameDay.gamePk = game.gamePk
+                  gameDay.score = game.teams.home.score + ' - ' + game.teams.away.score
                   gameDay.status = game.status.detailedState
                   if (player.editorial_team_full_name === game.teams.away.team.name) {
+                    gameDay.match = '@ ' + teamNamesAbv(game.teams.home.team.name)
                     gameDay.sos = game.teams.away.sos
                   } else if (player.editorial_team_full_name === game.teams.home.team.name) {
+                    gameDay.match = teamNamesAbv(game.teams.away.team.name)
                     gameDay.sos = game.teams.home.sos
                   }
                 }
@@ -147,6 +149,15 @@ export default {
       });
     }
     function getgames() {
+      function compare(a, b) {
+        if (a.games > b.games) {
+          return -1
+        }
+        if (a.games < b.games) {
+          return 1
+        }
+        return 0
+      }
       // Get all games
       Axios.get('https://statsapi.web.nhl.com/api/v1/schedule?startDate=' + store.league.scoreboard.matchups[0].week_start + '&endDate=' + store.league.scoreboard.matchups[0].week_end).then((response) => {
         let gameData = response.data.dates.flatMap(date => {
@@ -157,6 +168,51 @@ export default {
           game.teams.home.sos = gameSOS(game.teams.home.team.id, gameData, NHLStandings.value)
           return game
         })
+        let gamesPerTeam = response.data.dates.filter(date => {
+          let day = new Date(date.date + 'T00:00:00')
+          let today = new Date()
+          today.setHours(0, 0, 0, 0)
+          if (day >= today) {
+            return date
+          }
+        }).flatMap(date => {
+          return date.games
+        }).reduce(function (sums, entry) {
+          sums[entry.teams.home.team.name] = (sums[entry.teams.home.team.name] || 0) + 1;
+          sums[entry.teams.away.team.name] = (sums[entry.teams.away.team.name] || 0) + 1;
+          return sums
+        }, {})
+
+        teamGames.value = Object.keys(gamesPerTeam).map(team => {
+          let id;
+          gameData.some(game => {
+            if (game.teams.home.team.name === team) {
+              id = game.teams.home.team.id
+            } else if (game.teams.away.team.name === team) {
+              id = game.teams.away.team.id
+            }
+          })
+          return {
+            team: team,
+            games: gamesPerTeam[team],
+            id: id
+          }
+        }).map(team => {
+          let teamGames = gameData.filter(game => {
+            if (game.teams.away.team.name === team.team || game.teams.home.team.name === team.team) {
+              return game
+            }
+          }).map(game => {
+            if (game.teams.away.team.name === team.team) {
+              return game.teams.home.sos
+            } else if (game.teams.home.team.name === team.team) {
+              return game.teams.away.sos
+            }
+          })
+          let sosRating = teamGames.reduce((a, b) => { return a + b }) / teamGames.length
+          team.sos = sosRating
+          return team
+        }).sort(compare)
         getRoster()
       }).catch((error) => {
         console.log('error', error)
@@ -188,51 +244,7 @@ export default {
     //       })
     //     })
 
-    //     let gamesPerTeam = response.data.dates.filter(date => {
-    //       let day = new Date(date.date + 'T00:00:00')
-    //       let today = new Date()
-    //       today.setHours(0, 0, 0, 0)
-    //       if (day >= today) {
-    //         return date
-    //       }
-    //     }).flatMap(date => {
-    //       return date.games
-    //     }).reduce(function (sums, entry) {
-    //       sums[entry.teams.home.team.name] = (sums[entry.teams.home.team.name] || 0) + 1;
-    //       sums[entry.teams.away.team.name] = (sums[entry.teams.away.team.name] || 0) + 1;
-    //       return sums
-    //     }, {})
 
-    //     teamGames.value = Object.keys(gamesPerTeam).map(team => {
-    //       let id;
-    //       arrayOfGames.some(game => {
-    //         if (game.teams.home.team.name === team) {
-    //           id = game.teams.home.team.id
-    //         } else if (game.teams.away.team.name === team) {
-    //           id = game.teams.away.team.id
-    //         }
-    //       })
-    //       return {
-    //         team: team,
-    //         games: gamesPerTeam[team],
-    //         id: id
-    //       }
-    //     }).map(team => {
-    //       let teamGames = arrayOfGames.filter(game => {
-    //         if (game.teams.away.team.name === team.team || game.teams.home.team.name === team.team) {
-    //           return game
-    //         }
-    //       }).map(game => {
-    //         if (game.teams.away.team.name === team.team) {
-    //           return gameSOS(game.teams.home.team.id, arrayOfGames)
-    //         } else if (game.teams.home.team.name === team.team) {
-    //           return gameSOS(game.teams.away.team.id, arrayOfGames)
-    //         }
-    //       })
-    //       let sosRating = teamGames.reduce((a, b) => { return a + b }) / teamGames.length
-    //       team.sos = sosRating
-    //       return team
-    //     }).sort(compare)
     //     console.log(teamGames)
     //     playerAverages()
     //   }).catch((error) => {
@@ -278,7 +290,7 @@ export default {
       let gameDays = gameDay.value.map(date => {
         return { day: date, roster: [{ position: "C", count: 2 }, { position: "RW", count: 2 }, { position: "LW", count: 2 }, { position: "D", count: 4 }, { position: "Util", count: 1 }, { position: "G", count: 2 }], teams: [] }
       }).map(date => {
-        let games = weekMatches.value.filter(match => {
+        let games = games.value.filter(match => {
           if (new Date(date.day).setHours(0, 0, 0, 0) === new Date(match.gameDate).setHours(0, 0, 0, 0)) {
             return match
           }
@@ -315,8 +327,8 @@ export default {
     function playerAverages() {
       let playerNames = [...players.value].map(player => player.name.full)
       let lastGameDayPlayed = games.value.findLast(game => game.status.detailedState === 'Final')
-      lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(weekMatches.value[0].gamePk) - 1 : lastGameDayPlayed
-      getPlayerAverages({ name: playerNames }, 3, 'GAME_SCORE', parseInt(store.league.season + '020000'), lastGameDayPlayed.gamePk, true).then(response => {
+      lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(games.value[0].gamePk) - 1 : lastGameDayPlayed
+      getPlayerAverages({ name: playerNames }, 3, 'GAME_SCORE', parseInt(store.league.season + '020000'), lastGameDayPlayed, true).then(response => {
         players.value = [...players.value].map(player => {
           let returnedPlayer = response.filter(APIPlayer => {
             if (player.name.full === APIPlayer.name) {
@@ -341,7 +353,7 @@ export default {
       }
       getNHLStandings();
     });
-    return { store, route, players, games, weekMatches, scoreboard, gameDay, availableSpots, teamGames, roster, emptyRoster }
+    return { store, route, players, games, scoreboard, gameDay, availableSpots, teamGames, roster, emptyRoster }
   },
   methods: {
     updatePlayer(updatedPlayer) {
@@ -354,30 +366,46 @@ export default {
     },
     addPlayer(player) {
       let addedPlayer = player
-      // let lastGameDayPlayed = this.games.findLast(game => game.status.detailedState === 'Final')
-      // lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(this.weekMatches[0].gamePk) - 1 : lastGameDayPlayed
-      // getPlayerAverages({ name: [player.name] }, 3, 'GAME_SCORE', parseInt(this.store.league.season + '020000'), lastGameDayPlayed.gamePk, true).then(response => {
-      //   // players.value = [...players.value].map(player => {
-      //   //   let returnedPlayer = response.filter(APIPlayer => {
-      //   //     if (player.name.full === APIPlayer.name) {
-      //   //       return player
-      //   //     }
-      //   //   })[0]
-      //   //   if (returnedPlayer !== undefined) {
-      //   //     player.averages = returnedPlayer.averages
-      //   //     player.previousGames = returnedPlayer.previousGames
-      //   //   }
-      //   //   return player
-      //   // })
-      //   // findAvailableSpots()
-
-      //   player.starting = this.games.filter(game => {
-      //     if (game)
-      //   })
-      //   player.previousGames = response[0].previousGames
-      // })
+      let lastGameDayPlayed = this.games.findLast(game => game.status.detailedState === 'Final')
+      lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(this.weekMatches[0].gamePk) - 1 : lastGameDayPlayed
+      getPlayerAverages({ name: [player.name] }, 3, 'GAME_SCORE', parseInt(this.store.league.season + '020000'), lastGameDayPlayed.gamePk, true).then(response => {
+        // players.value = [...players.value].map(player => {
+        //   let returnedPlayer = response.filter(APIPlayer => {
+        //     if (player.name.full === APIPlayer.name) {
+        //       return player
+        //     }
+        //   })[0]
+        //   if (returnedPlayer !== undefined) {
+        //     player.averages = returnedPlayer.averages
+        //     player.previousGames = returnedPlayer.previousGames
+        //   }
+        //   return player
+        // })
+        // findAvailableSpots()
+        let teamGames = this.games.filter(game => game.teams.away.team.id === player.currentTeamId || game.teams.home.team.id === player.currentTeamId)
+        player.starting = this.gameDay.map(day => {
+          let startingGame = teamGames.find(game => (standardizeDate(day) === standardizeDate(game.gameDate)))
+          let sos = 0;
+          if (startingGame !== undefined) {
+            if (startingGame.teams.away.team.id === player.currentTeamId) {
+              sos = startingGame.teams.away.sos
+            } else if (startingGame.teams.home.team.id === player.currentTeamId) {
+              sos = startingGame.teams.home.sos
+            }
+          }
+          return {
+            date: day,
+            gamePk: startingGame === undefined ? '' : startingGame.gamePk,
+            position: "C",
+            sos: sos,
+            status: startingGame === undefined ? null : startingGame.status.detailedState
+          }
+        })
+        player.previousGames = response[0].previousGames
+        this.players.push(player)
+      })
       // this.players.push(player)
-      console.log(player)
+      // console.log(player)
     }
   },
   computed: {
@@ -386,6 +414,10 @@ export default {
       return today.toISOString().split('T')[0]
     },
     projectedPlayers: function () {
+      console.log(this.players, this.players.length)
+      if (this.players.length === 0 || this.players.length === undefined) {
+        return []
+      }
       return this.players.filter(player => player.selected)
     }
   }

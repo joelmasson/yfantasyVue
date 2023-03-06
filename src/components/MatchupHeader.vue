@@ -1,12 +1,12 @@
 <template>
-  <div>
-    <div v-for="team in matchup.teams">
-      <TeamProfile :team="team"></TeamProfile>
-      <span>{{ score(team.team_key, matchup) }}</span>
-      <MatchupProjectionWeek :settings="store.league.settings.stat_categories" :players="team.players" :schedule="games"
-        :scoreboard="store.league.scoreboard.matchups" :team_id="team.team_id" :NHLStandings="NHLStandings">
-      </MatchupProjectionWeek>
-    </div>
+  <div v-for="(team, i) in matchup.teams" class="grid px-6 py-4 whitespace-nowrap items-center justify-end"
+    style="grid-template-columns: 0fr 0fr;" :style="i === 1 ? 'direction:rtl;' : ''">
+    <TeamProfile :team="team"></TeamProfile>
+    <span class="mx-4">{{ score(team.team_key, matchup) }}</span>
+    <MatchupProjectionWeek v-if="projections" :settings="store.league.settings.stat_categories" :players="team.players"
+      :schedule="games" :scoreboard="store.league.scoreboard.matchups" :team_id="team.team_id"
+      :NHLStandings="NHLStandings">
+    </MatchupProjectionWeek>
   </div>
 </template>
 <script>
@@ -28,7 +28,7 @@ export default {
 
     return { store, route }
   },
-  props: ['matchup', 'gameDays', 'games', 'teams', 'NHLStandings'],
+  props: ['matchup', 'gameDays', 'games', 'teams', 'NHLStandings', 'projections'],
   methods: {
     score: (teamID, matchup) => {
       console.log()

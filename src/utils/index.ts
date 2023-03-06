@@ -159,20 +159,62 @@ export function gameDays(start: string, end: string) {
   return getDates(new Date(start + "T23:59:59.000-04:00"), new Date(end));
 }
 
-export function statline(categories: StatCategories, stats: Stats) {
-  return categories.map((cat) => {
-    let projectedStat = Object.keys(stats)
-      .filter((stat) => {
-        if (statIdToProjection(cat.stat_id.toString()) === stat) {
-          return stats[stat];
-        }
+export function StatLine(categories: StatCategories, stats: Stats) {
+  return categories.map((category) => {
+    return stats.find((stat) => {
+      if (category.stat_id === parseInt(stat.stat_id)) {
+        return stat;
+      }
+    });
+  });
+}
+
+export function PlayersProjection(players: Array<any>, categories: Array<any>) {
+  return categories.map((stat) => {
+    let value = [...players]
+      .map((player) => {
+        let playerStats = player.starting
+          .filter((day) => day.game_id !== "")
+          .map((match) => {
+            // Loop over each day in the week
+            if (match.status === "Final") {
+              let gameStats = player?.previousGames?.filter(
+                (previousGame) => previousGame.gamePk === match.gamePk
+              )[0];
+              if (gameStats !== undefined) {
+                let statValue = YahooCategoryToAPIStat(stat.name, gameStats);
+                if (
+                  isNaN(statValue) ||
+                  statValue === undefined ||
+                  statValue === null
+                ) {
+                  statValue = 0;
+                }
+                return statValue;
+              }
+              return 0;
+            } else {
+              let statValue = YahooCategoryToAPIStat(
+                stat.name,
+                player.averages
+              );
+              if (
+                isNaN(statValue) ||
+                statValue === undefined ||
+                statValue === null
+              ) {
+                statValue = 0;
+              }
+              return statValue * (1 - match.sos);
+            }
+          });
+        let ps = playerStats.reduce((a, b) => {
+          return a + b;
+        }, 0);
+        return ps;
       })
-      .map((stat) => {
-        return stats[stat];
-      })[0];
-    return {
-      display_name: cat.display_name,
-      value: projectedStat === undefined ? 0 : projectedStat,
-    };
+      .reduce((a, b) => a + b, 0)
+      .toFixed(2);
+    return { name: stat.name, value: value };
   });
 }

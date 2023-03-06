@@ -1,7 +1,8 @@
 
 <template>
   <section>
-    <MatchupHeader :gameDays="gameDays" :games="games" :matchup="matchup" :NHLStandings="NHLStandings">
+    <MatchupHeader :projections="true" :gameDays="gameDays" :games="games" :matchup="matchup"
+      :NHLStandings="NHLStandings">
     </MatchupHeader>
     <Calender :dates="gameDays"></Calender>
     <div v-if="games.length > 0" v-for="team in matchup.teams">

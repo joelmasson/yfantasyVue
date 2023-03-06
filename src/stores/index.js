@@ -138,8 +138,14 @@ export const useStore = defineStore("main", {
     getTeams: (state) => () => {
       return state.teams;
     },
-    getCategories: (state) => () => {
-      return state.categories;
+    getCategories: (state) => (type) => {
+      if (type === undefined) {
+        return state.league.settings.stat_categories;
+      } else {
+        return state.league.settings.stat_categories.filter(
+          (category) => category.position_type === type
+        );
+      }
     },
     getPositions: (state) => () => {
       return state.positions;
@@ -155,6 +161,17 @@ export const useStore = defineStore("main", {
     },
     getReplacements: (state) => () => {
       return state.replacements;
+    },
+    getTeam: (state) => (id) => {
+      return state.league.scoreboard.matchups
+        .filter((match) => {
+          return match.teams.some((team) => {
+            if (team.team_id === id) {
+              return team;
+            }
+          });
+        })[0]
+        .teams.filter((team) => team.team_id === id)[0];
     },
   },
   mutations: {

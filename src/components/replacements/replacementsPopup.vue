@@ -1,7 +1,7 @@
 <template>
     <div id="defaultModal" tabindex="-1" aria-hidden="true"
         class="fixed top-0 left-0 right-0 z-50 w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-modal md:h-full">
-        <div class="relative w-full h-full max-w-2xl md:h-auto">
+        <div class="relative w-full h-full max-w-2xl md:h-auto mx-auto">
             <!-- Modal content -->
             <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
                 <!-- Modal header -->
@@ -30,7 +30,7 @@
                             {{ player.selected ? '-' : '+' }}
                         </button>
                         <Profile :player="player"></Profile>
-                        {{ player.averages.GAME_SCORE }}
+                        <!-- {{ player.averages.GAME_SCORE }} -->
                     </div>
                 </div>
             </div>
@@ -48,7 +48,7 @@ export default {
     setup() {
         const store = useStore()
         console.log(store.replacements)
-        let playerlist = store.replacements === undefined ? [] : store.replacements
+        let playerlist = store.replacements === undefined ? [] : store.replacements.players
         return { store, playerlist }
     },
     data() {

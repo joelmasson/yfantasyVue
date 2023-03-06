@@ -11,70 +11,83 @@ export default {
         return { store, route }
     },
     computed: {
-        game_id() {
-            console.log(route)
-            return this.$route.params.game_id
+
+        team() {
+            return this.store.getTeam(this.route.params.team_id)
         }
     }
 }
 </script>
 <template>
-    <nav class="bg-gray-800">
-        <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-            <div class="relative flex items-center justify-between h-16">
-                <div class="absolute inset-y-0 left-0 flex items-center sm:hidden">
-                    <!-- Mobile menu button-->
-                    <button
-                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                        aria-expanded="false">
-                        <span class="sr-only">Open main menu</span>
-                        <!-- Icon when menu is closed. -->
-                        <!--
-                        Heroicon name: menu
-
-                        Menu open: "hidden", Menu closed: "block"
-                    -->
-                        <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                        <!-- Icon when menu is open. -->
-                        <!--
-                        Heroicon name: x
-
-                        Menu open: "block", Menu closed: "hidden"
-                    -->
-                        <svg class="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
-                    <div class="flex-shrink-0 flex items-center">
-                        <img class="block lg:hidden h-8 w-auto"
-                            src="https://tailwindui.com/img/logos/workflow-mark-indigo-500.svg" alt="Workflow">
-                        <img class="hidden lg:block h-8 w-auto"
-                            src="https://tailwindui.com/img/logos/workflow-logo-indigo-500-mark-white-text.svg"
-                            alt="Workflow">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
+        <div class="flex lg:flex-1">
+            <a href="#" class="-m-1.5 p-1.5">
+                <span class="sr-only">Your Company</span>
+                <img class="h-8 w-auto" src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600" alt="">
+            </a>
+        </div>
+        <div class="flex lg:hidden">
+            <button type="button" class="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700">
+                <span class="sr-only">Open main menu</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                    aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
+        </div>
+        <div class="hidden lg:flex lg:gap-x-12">
+            <router-link class="text-sm font-semibold leading-6 text-gray-900" v-if="route.params.game_id"
+                :to="{ name: 'League', game_id: route.params.game_id }">{{ store.league.name
+                }}</router-link>
+            <router-link class="text-sm font-semibold leading-6 text-gray-900" v-if="route.params.team_id"
+                :to="{ name: 'Team', game_id: route.params.game_id, team_id: route.params.team_id }">{{
+                    team.name }}</router-link>
+        </div>
+        <div class="hidden lg:flex lg:flex-1 lg:justify-end">
+            <a href="/api/login" class="text-sm font-semibold leading-6 text-gray-900">Log in <span
+                    aria-hidden="true">&rarr;</span></a>
+        </div>
+    </nav>
+    <!-- Mobile menu, show/hide based on menu open state. -->
+    <div class="lg:hidden" role="dialog" aria-modal="true">
+        <!-- Background backdrop, show/hide based on slide-over state. -->
+        <div class="fixed inset-0 z-10"></div>
+        <div
+            class="fixed inset-y-0 right-0 z-10 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
+            <div class="flex items-center justify-between">
+                <a href="#" class="-m-1.5 p-1.5">
+                    <span class="sr-only">Your Company</span>
+                    <img class="h-8 w-auto" src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600" alt="">
+                </a>
+                <button type="button" class="-m-2.5 rounded-md p-2.5 text-gray-700">
+                    <span class="sr-only">Close menu</span>
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                        aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="mt-6 flow-root">
+                <div class="-my-6 divide-y divide-gray-500/10">
+                    <div class="space-y-2 py-6">
+                        <router-link
+                            class="-mx-3 block rounded-lg py-2 px-3 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                            v-if="route.params.game_id" :to="{ name: 'League', game_id: route.params.game_id }">{{
+                                store.league.name
+                            }}</router-link>
+                        <router-link
+                            class="-mx-3 block rounded-lg py-2 px-3 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                            v-if="route.params.team_id"
+                            :to="{ name: 'Team', game_id: route.params.game_id, team_id: route.params.team_id }">{{
+                                team.name }}</router-link>
                     </div>
-                    <div class="hidden sm:block sm:ml-6">
-                        <div class="flex space-x-4">
-                            <!-- <router-link :to="{ name: 'League', game_id: $route.params.game_id}">League</router-link> -->
-                            <!-- <Button v-on:click="login">Login</Button> -->
-                        </div>
-                        <ol class="list-reset flex" v-if="route.params.game_id">
-                            <router-link :to="{ name: 'League', game_id: route.params.game_id }">{{store.league.name}}</router-link>
-                            <li><span class="text-gray-500 mx-2"></span></li>
-                            <router-link v-if="route.params.team_id" :to="{ name: 'Team', game_id: route.params.game_id, team_id:route.params.team_id }">{{store.league.name}}</router-link>
-                            <a href='/api/login'
-                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Login</a>
-                        </ol>
+                    <div class="py-6">
+                        <a href="/api/login"
+                            class="-mx-3 block rounded-lg py-2.5 px-3 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50">Log
+                            in</a>
                     </div>
                 </div>
             </div>
         </div>
-    </nav>
+    </div>
 </template>

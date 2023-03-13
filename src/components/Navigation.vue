@@ -11,7 +11,6 @@ export default {
         return { store, route }
     },
     computed: {
-
         team() {
             return this.store.getTeam(this.route.params.team_id)
         }

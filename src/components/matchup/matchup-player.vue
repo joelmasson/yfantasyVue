@@ -1,22 +1,21 @@
 <template>
   <div class="flex justify-start md:justify-center">
-    <!-- <p class="text-xl content-center text-center p-2 m-auto w-2">{{player.selected_position}}</p> -->
-    <div v-if="route.name === 'Team'">
+    <div class="w-14" v-if="route.name === 'Team'">
       <button
         :class="['block text-white focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800', player.selected ? `bg-red-700 hover:bg-red-800` : `bg-green-700 hover:bg-green-800`]"
         type="button" @click="togglePlayer(player)">
         {{ player.selected ? '-' : '+' }}
       </button>
     </div>
-    <Profile :player="player"></Profile>
+    <Profile :player="player" :team="fantasyTeam"></Profile>
     <div
       class="flex group rounded-lg mx-1 my-1 transition-all duration-300 cursor-pointer justify-center w-20 hover:shadow-lg hover-dark-shadow border-2"
       v-bind:class="rating(day.sos)" v-for="(day, i) in games" :key="i">
-      <span v-if="today" class="flex h-3 w-3 absolute -top-1 -right-1">
+      <!-- <span v-if="today" class="flex h-3 w-3 absolute -top-1 -right-1">
         <span
           class="animate-ping absolute group-hover:opacity-75 opacity-0 inline-flex h-full w-full rounded-full bg-purple-400 "></span>
         <span class="relative inline-flex rounded-full h-3 w-3 bg-purple-100"></span>
-      </span>
+      </span> -->
       <div class="flex items-center px-4 py-4">
         <div class="text-center">
           <p class=" text-gray-900 group-hover:text-gray-100 text-sm transition-all duration-300">
@@ -125,6 +124,9 @@ export default {
         })
         return { date: date, gameDay: gameDay[0], stat: displayedStat[0], sos: sos }
       })
+    },
+    fantasyTeam: function () {
+      return this.store.getTeam(this.route.params.team_id)
     }
   }
 }

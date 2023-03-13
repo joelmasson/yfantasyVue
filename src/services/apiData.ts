@@ -270,22 +270,22 @@ export async function getWeekRoster(
       ---- */
   let startingLineupPromise = dates.map((date) => {
     let day = new Date(date);
-    day = day.toLocaleDateString("en-CA", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
+    day = day.toISOString();
+    console.log(day);
     return Axios.post("/api/yahoo/roster/players", {
       team_key: game_id + ".l." + league_id + ".t." + team_id,
       date: day,
-    }).then((response) => {
-      return response.data.roster;
-    });
+    })
+      .then((response) => {
+        return response.data.roster;
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   });
   try {
     const data = Promise.allSettled(startingLineupPromise).then(
       (response: unknownQuery) => {
-        console.log(response);
         let roster = new Set();
         response.forEach((day) => {
           day.value.forEach((player) => {
@@ -311,6 +311,7 @@ export async function getWeekRoster(
                   previousGames: [],
                   selected: true,
                   starting: [],
+                  stats: [],
                 });
               }
             }
@@ -343,5 +344,39 @@ export async function getWeekRoster(
   } catch (error) {
     console.log("unexpected error: ", error);
     return "An unexpected error occurred";
+  }
+}
+
+export async function getPlayerStats(
+  query: unknownQuery,
+  start: number,
+  end: number
+) {
+  try {
+    let season = start.toString().slice(0, 4) + "020000";
+    console.log({
+      data: query,
+      season: parseInt(season),
+      start: start,
+      end: end,
+    });
+    const { data, status } = await Axios.post<PlayerGameAverages>(
+      "/api/players/stats",
+      {
+        data: query,
+        season: parseInt(season),
+        start: start,
+        end: end,
+      }
+    );
+    return data;
+  } catch (error) {
+    if (Axios.isAxiosError(error)) {
+      console.log("error message: ", error.message);
+      return error.message;
+    } else {
+      console.log("unexpected error: ", error);
+      return "An unexpected error occurred";
+    }
   }
 }

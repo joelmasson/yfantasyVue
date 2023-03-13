@@ -218,3 +218,141 @@ export function PlayersProjection(players: Array<any>, categories: Array<any>) {
     return { name: stat.name, value: value };
   });
 }
+
+export function TeamAbbvYahooToNHL(abbv: string) {
+  switch (abbv) {
+    case "ANA":
+      return 24;
+    case "ARI":
+      return 53;
+    case "BOS":
+      return 6;
+    case "BUF":
+      return 7;
+    case "CAR":
+      return 12;
+    case "CBJ":
+      return 29;
+    case "CGY":
+      return 20;
+    case "CHI":
+      return 16;
+    case "COL":
+      return 21;
+    case "DAL":
+      return 25;
+    case "DET":
+      return 17;
+    case "EDM":
+      return 22;
+    case "FLA":
+      return 13;
+    case "LAK":
+      return 26;
+    case "MIN":
+      return 30;
+    case "MTL":
+      return 8;
+    case "NJD":
+      return 1;
+    case "NSH":
+      return 18;
+    case "NYI":
+      return 2;
+    case "NYR":
+      return 3;
+    case "OTT":
+      return 9;
+    case "PHI":
+      return 4;
+    case "PIT":
+      return 5;
+    case "SEA":
+      return 55;
+    case "SJS":
+      return 28;
+    case "STL":
+      return 19;
+    case "TBL":
+      return 14;
+    case "TOR":
+      return 10;
+    case "VAN":
+      return 23;
+    case "VGK":
+      return 54;
+    case "WPG":
+      return 52;
+    case "WSH":
+      return 15;
+  }
+}
+
+export function TeamNHLIdtoAbbv(id: number) {
+  switch (id) {
+    case 24:
+      return "ANA";
+    case 53:
+      return "ARI";
+    case 6:
+      return "BOS";
+    case 7:
+      return "BUF";
+    case 12:
+      return "CAR";
+    case 29:
+      return "CBJ";
+    case 20:
+      return "CGY";
+    case 16:
+      return "CHI";
+    case 21:
+      return "COL";
+    case 25:
+      return "DAL";
+    case 17:
+      return "DET";
+    case 22:
+      return "EDM";
+    case 13:
+      return "FLA";
+    case 26:
+      return "LAK";
+    case 30:
+      return "MIN";
+    case 8:
+      return "MTL";
+    case 1:
+      return "NJD";
+    case 18:
+      return "NSH";
+    case 2:
+      return "NYI";
+    case 3:
+      return "NYR";
+    case 9:
+      return "OTT";
+    case 4:
+      return "PHI";
+    case 5:
+      return "PIT";
+    case 55:
+      return "SEA";
+    case 28:
+      return "SJS";
+    case 19:
+      return "STL";
+    case 14:
+      return "TBL";
+    case 10:
+      return "TOR";
+    case 23:
+      return "VAN";
+    case 54:
+      return "VGK";
+    case 52:
+      return "WPG";
+    case 15:
+      return "WSH";
+  }
+}

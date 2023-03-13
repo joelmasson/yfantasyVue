@@ -5,16 +5,14 @@
     <WeekProjections :settings="store.league.settings.stat_categories" :players="projectedPlayers" :schedule="games"
       :scoreboard="scoreboard" :team_id="route.params.team_id"></WeekProjections>
     <div class="flex justify-start md:justify-center">
+      <div class="w-14"></div>
       <div class="w-36"></div>
       <div class="flex group mx-1 my-1 justify-center w-20" v-for="(day, i) in gameDay" :key="i">
         {{ day.split('-')[1] }} {{ day.split('-')[2] }}
       </div>
     </div>
-    <MatchupPlayer v-if="players.length === 0" v-for="(player, i) in emptyRoster" :key="i" :player="player"
-      :dates="gameDay" :schedule="games">
-    </MatchupPlayer>
-    <MatchupPlayer v-else v-for="player in players" :key="player.player_id" :player="player" :dates="gameDay"
-      :schedule="games" @updatePlayer="updatePlayer">
+    <MatchupPlayer v-for="player in players" :key="player.player_id" :player="player" :dates="gameDay" :schedule="games"
+      @updatePlayer="updatePlayer">
     </MatchupPlayer>
   </div>
 </template>
@@ -77,6 +75,7 @@ export default {
     }
     function getRoster() {
       getWeekRoster(gameDay.value, route.params.game_id, route.params.league_id, route.params.team_id).then(data => {
+        console.log(data)
         players.value = data
         games.value.forEach(game => {
           players.value.forEach(player => {

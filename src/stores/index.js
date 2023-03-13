@@ -116,6 +116,7 @@ export const useStore = defineStore("main", {
         });
       });
     },
+    async pullNHLSchedule() {},
   },
   state: () => ({
     league: useStorage("league", {}),

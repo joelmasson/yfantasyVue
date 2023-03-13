@@ -30,7 +30,8 @@
                             {{ player.selected ? '-' : '+' }}
                         </button>
                         <Profile :player="player"></Profile>
-                        <!-- {{ player.averages.GAME_SCORE }} -->
+                        <GameScore :amount="player.averages.GAME_SCORE" :timeframe="'Average GameScore this season'">
+                        </GameScore>
                     </div>
                 </div>
             </div>
@@ -40,14 +41,14 @@
 <script>
 import { useStore } from '../../stores/index.js'
 import Profile from './../Profile.vue'
+import GameScore from '../player/gameScore.vue'
 export default {
     name: 'Replacements Popup',
     components: {
-        Profile
+        Profile, GameScore
     },
     setup() {
         const store = useStore()
-        console.log(store.replacements)
         let playerlist = store.replacements === undefined ? [] : store.replacements.players
         return { store, playerlist }
     },
@@ -69,7 +70,6 @@ export default {
     },
     computed: {
         PPP() {
-            console.log(this.state)
             return this.state.replacements
         }
     }

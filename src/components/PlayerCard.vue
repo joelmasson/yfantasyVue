@@ -57,7 +57,7 @@
                 </div>
               </div>
               <div>
-                <h4 class="text-4xl font-bold text-black">{{ player.averages.GAME_SCORE.toFixed(2) }}</h4>
+                <h4 class="text-4xl font-bold text-black" v-if="player.averages.GAME_SCORE">{{ player.averages.GAME_SCORE.toFixed(2) }}</h4>
                 <p class="text-sm text-gray-500">Game Score this week</p>
               </div>
             </div>

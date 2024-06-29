@@ -11,6 +11,7 @@ import { APINHLStandings } from "../services/statsapi";
 export const useStore = defineStore("main", {
   actions: {
     async getYahooLeague(game_id, league_id) {
+      console.log('yahoo')
       if (
         this.league.edit_key === undefined ||
         new Date(this.league.edit_key) < new Date()
@@ -109,14 +110,16 @@ export const useStore = defineStore("main", {
         };
       });
     },
-    async getNHLStandings() {
-      let standingsData = APINHLStandings().then((response) => {
-        this.NHL.standings = response.data.records.flatMap((date) => {
-          return date.teamRecords;
+    async fetchNHLStandings(date) {
+      try {
+        Axios.get('/api/standings/' + date).then((response) => {
+          this.standings = response.data.standings
         });
-      });
+      } catch (error) {
+        console.log(error)
+      }
     },
-    async pullNHLSchedule() {},
+    async pullNHLSchedule() { },
   },
   state: () => ({
     league: useStorage("league", {}),
@@ -127,6 +130,7 @@ export const useStore = defineStore("main", {
       players: [],
     }),
     NHL: useStorage("NHL", {}),
+    standings: useStorage("standings", {}),
     // TODO save NHL Team data
   }),
   getters: {
@@ -164,15 +168,15 @@ export const useStore = defineStore("main", {
       return state.replacements;
     },
     getTeam: (state) => (id) => {
-      return state.league.scoreboard.matchups
-        .filter((match) => {
-          return match.teams.some((team) => {
-            if (team.team_id === id) {
-              return team;
-            }
-          });
-        })[0]
-        .teams.filter((team) => team.team_id === id)[0];
+      return state.league.standings
+        .find((team) => {
+          if (team.team_id === id) {
+            return team;
+          }
+        })
+    },
+    getNHLStandings: (state) => () => {
+      return state.standings;
     },
   },
   mutations: {
@@ -189,6 +193,6 @@ export const useStore = defineStore("main", {
     },
     updateReplacements(state, data) {
       state.replacements = data;
-    },
+    }
   },
 });

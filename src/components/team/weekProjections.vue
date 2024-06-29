@@ -71,7 +71,9 @@ export default {
             })
         },
         projectedStats: function () {
+            console.log(this.players)
             let players = toRaw(this.players)
+            console.log(players)
             let stats = this.settings.map(stat => {
                 if (this.schedule === undefined || Object.keys(players).length === 0 || this.schedule.length === 0) {
                     return { name: stat.name, value: 0 }

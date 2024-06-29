@@ -10,7 +10,7 @@
     <Profile :player="player" :team="fantasyTeam"></Profile>
     <div
       class="flex group rounded-lg mx-1 my-1 transition-all duration-300 cursor-pointer justify-center w-20 hover:shadow-lg hover-dark-shadow border-2"
-      v-bind:class="rating(day.sos)" v-for="(day, i) in games" :key="i">
+      v-bind:class="rating(day)" v-for="(day, i) in games" :key="i">
       <!-- <span v-if="today" class="flex h-3 w-3 absolute -top-1 -right-1">
         <span
           class="animate-ping absolute group-hover:opacity-75 opacity-0 inline-flex h-full w-full rounded-full bg-purple-400 "></span>
@@ -29,6 +29,10 @@
           </p>
         </div>
       </div>
+      <div role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+    Tooltip content
+    <div class="tooltip-arrow" data-popper-arrow></div>
+</div>
     </div>
   </div>
 </template>
@@ -54,18 +58,21 @@ export default {
   props: ['player', 'dates', 'schedule'],
   components: { Profile },
   methods: {
-    rating: function (sos) {
-      if (sos === null) {
-        return 'hover:bg-grey-500 border-grey-500'
-      } else if (sos < 0.5) {
-        return 'hover:bg-green-500 border-green-500'
-      } else if (sos < 0.575) {
-        return 'hover:bg-yellow-500 border-yellow-500'
-      } else if (sos < 0.625) {
-        return 'hover:bg-orange-500 border-orange-500'
-      } else if (sos < 0.7) {
-        return 'hover:bg-red-500 border-red-500'
+    rating: (day) => {
+      if(day.position === 'BN'){x
+        return 'opacity-50'
       }
+      // if (sos === null) {
+      //   return 'hover:bg-grey-500 border-grey-500'
+      // } else if (sos < 0.5) {
+      //   return 'hover:bg-green-500 border-green-500'
+      // } else if (sos < 0.575) {
+      //   return 'hover:bg-yellow-500 border-yellow-500'
+      // } else if (sos < 0.625) {
+      //   return 'hover:bg-orange-500 border-orange-500'
+      // } else if (sos < 0.7) {
+      //   return 'hover:bg-red-500 border-red-500'
+      // }
     },
     togglePlayer(player) {
       this.player.selected = !this.player.selected
@@ -79,7 +86,8 @@ export default {
     },
     games: function () {
       if (this.player.starting === undefined || this.player.previousGames.length === 0) {
-        return this.dates.map(day => { return { date: day, match: '', score: '', stat: undefined } })
+        return this.player.starting
+        return { date: day, match: day.match, score: '', stat: undefined }
       }
       return this.player.starting.map(day => {
         let playedGame = this.player.previousGames.find(game => game.gamePk === day.gamePk)

@@ -1,6 +1,6 @@
 <template>
   <section>
-    <ul class="inline-flex">
+    <ul class="inline-flex" v-if="league.end_week">
       <li v-for="week in parseInt(league.end_week)" :key="week">
         <button
           class="bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
@@ -9,7 +9,7 @@
         </button>
       </li>
     </ul>
-    <ul class="flex flex-col items-center">
+    <ul class="flex flex-col items-center" v-if="league.scoreboard">
       <li v-for="(matchup, i) in league.scoreboard.matchups" :key="i" class="grid grid-cols-2">
         <!-- <router-link
                 :to="{ name: 'Matchup', params: { game_id: $route.params.game_id, league_id: $route.params.league_id, week_num: matchup.week, matchup: matchup.teams[0].team_id + '-' + matchup.teams[1].team_id } }"> -->

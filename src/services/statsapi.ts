@@ -2,7 +2,7 @@ import Axios from "axios";
 
 export async function APINHLStandings() {
   try {
-    return await Axios.get("https://statsapi.web.nhl.com/api/v1/standings");
+    return await Axios.get("https://api-web.nhle.com/v1/standings/now");
   } catch (error) {
     if (Axios.isAxiosError(error)) {
       console.log("error message: ", error.message);
@@ -25,7 +25,7 @@ export async function APINHLSchedule(team_id: string, season: string) {
   console.log(params);
   try {
     return await Axios.get(
-      "https://statsapi.web.nhl.com/api/v1/schedule?" + params
+      "https://api-web.nhle.com/v1/schedule/" + params
     );
   } catch (error) {
     if (Axios.isAxiosError(error)) {

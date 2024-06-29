@@ -25,7 +25,7 @@ const DashboardRouter: Array<RouteRecordRaw> = [
         component: League
     },
     {
-        path: '/game/:game_id/league/:league_id/team/:team_id/week/:week_num',
+        path: '/game/:game_id?/league/:league_id?/team/:team_id?/week/:week_num?',
         name: 'Team',
         component: Team
     },

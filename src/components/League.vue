@@ -1,12 +1,12 @@
 <template>
-  <div>
+  <div v-if="this.store.league">
     <Standings :standings='this.store.league'></Standings>
     <Matchups :league='this.store.league' @selectedWeek="updateSelectedWeek"></Matchups>
   </div>
 </template>
 <script>
 import Axios from 'axios'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useStore } from '../stores/index.js'
 
 import Standings from './Standings.vue'
@@ -17,6 +17,7 @@ export default {
     const route = useRoute()
     const store = useStore()
     store.getYahooLeague(route.params.game_id, route.params.league_id)
+    store.fetchNHLStandings('now')
     return { store, route }
   },
   data() {
@@ -40,6 +41,7 @@ export default {
       proData: {},
       playByPlayData: [],
       dates: [],
+      currentSchedule: {},
       currentWeek: 1,
     }
   },
@@ -55,25 +57,30 @@ export default {
     //   })[0].sport
     // }
   },
+  watch: {
+    currentSchedule() {
+      this.getCurrentSeason()
+    }
+  },
   methods: {
-    getPastLeaugeKeys: function () {
-      let self = this
-      Axios.get('/api/games/1', {
-        league_key: self.league.game_code
-      })
-        .then((response) => {
-          self.league_keys = response.data.filter(league => {
-            if (league.name === self.league_abbr) {
-              return league
-            }
-          })[0].game_keys
-          self.updateStore()
-        })
-        .catch((error) => {
-          // self.updateStore()
-          console.log('error', error)
-        })
-    },
+    // getPastLeaugeKeys: function () {
+    //   let self = this
+    //   Axios.get('/api/games/1', {
+    //     league_key: self.league.game_code
+    //   })
+    //     .then((response) => {
+    //       self.league_keys = response.data.filter(league => {
+    //         if (league.name === self.league_abbr) {
+    //           return league
+    //         }
+    //       })[0].game_keys
+    //       self.updateStore()
+    //     })
+    //     .catch((error) => {
+    //       // self.updateStore()
+    //       console.log('error', error)
+    //     })
+    // },
     // getYahooLeague: function () {
     //   let self = this
     //   Axios.post('/api/yahoo/leagues/fetch', {
@@ -99,28 +106,58 @@ export default {
     //       console.log('error', error)
     //     })
     // },
-    getCurrentExternalSeason: function () {
+    // getCurrentExternalSeason: function () {
+    //   let self = this
+    //   let season = this.store.league.season + (parseInt(this.store.league.season) + 1)
+    //   Axios.get('/api/standings/now')
+    //     .then(response => {
+    //       console.log({response})
+    //       self.store.NHLStandings = response.data.standings
+    //       // self.scrapedSeason = response.data.standings
+    //       // self.season = response.data.standings
+    //       // self.saveSeason()
+    //     }).catch((error) => {
+    //       console.log('error', error)
+    //     })
+    // },
+    getCurrentSchedule: function () {
       let self = this
-      let season = this.store.league.season + (parseInt(this.store.league.season) + 1)
-      Axios.get('https://statsapi.web.nhl.com/api/v1/schedule?season=' + season)
-        .then(response => {
-          console.log(response.data)
-          self.scrapedSeason = response.data
-          self.season = response.data
-          self.saveSeason()
-        }).catch((error) => {
-          console.log('error', error)
+      Axios.get('/api/schedule/now')
+        .then((response) => {
+          console.log(response)
+          self.currentSchedule = response.data
+          self.games = response.data.gameWeek
         })
     },
+    getPreviousSeason: function () {
+      let self = this
+      function callAPI(date) {
+        if (date) {
+          Axios.get('/api/schedule/' + date)
+            .then((response) => {
+              let currDate = new Date(date);
+              let finalDate = new Date(self.currentSchedule.playoffEndDate)
+              let games = response.data.gameWeek
+              self.dates.push(games)
+              if (currDate < finalDate) {
+                callAPI(response.data.nextStartDate)
+              }
+            })
+        } else {
+          self.saveSeason()
+        }
+      }
+      callAPI(this.currentSchedule.preSeasonStartDate);
+    },
     getCurrentSeason: function () {
-      console.log('season')
       let self = this
       Axios.get('/api/season/' + this.route.params.game_id)
         .then(response => {
+          console.log(response, 'season')
           let today = new Date()
           // self.getSeasonPlayers()
           if (response.data.error === 'Season not found') {
-            self.getCurrentExternalSeason()
+            self.getPreviousSeason()
 
           } else {
             // league has started
@@ -132,7 +169,7 @@ export default {
                 }
               })
               if (self.dates.length > 0) {
-                self.getExtenalPlayByPlay(self.dates[0].date, self.dates[0].date)
+                self.getExtenalPlayByPlay(self.dates[0].date, self.dates[self.dates.length - 1].date)
               }
             }
           }
@@ -142,29 +179,33 @@ export default {
     },
     saveSeason: function () {
       let self = this
+      console.log('save', self.league)
+      let league = this.store.getLeague()
       let seasonData = {
-        'name': self.league.season + (parseInt(self.league.season) + 1),
+        'name': league.season + (parseInt(league.season) + 1),
         'game_key': self.$route.params.game_id,
-        'totalGames': self.season.totalGames,
-        'lastGameDayPlayed': new Date(self.season.dates[0].date),
-        'startDate': self.season.dates[0].date,
-        'dates': self.season.dates.map(date => {
-          return {
-            'date': date.date,
-            'games': date.games.map(game => {
-              return {
-                'gamePk': game.gamePk,
-                'gameDate': game.dateDate
-              }
-            })
-          }
+        'lastGameDayPlayed': self.currentSchedule.playoffEndDate,
+        'startDate': self.currentSchedule.preSeasonStartDate,
+        'dates': self.dates.flatMap(week => {
+          return week.flatMap((date) => {
+            return {
+              'date': date.date,
+              'games': date.games.map(game => {
+                return {
+                  'gamePk': game.id,
+                  'startTime': game.startTimeUTC
+                }
+              })
+            }
+          })
         })
       }
+      console.log(seasonData)
       Axios.post('/api/season', {
         data: seasonData
       }).then(response => {
         self.season = response.data
-        self.saveSchedule()
+        // self.saveSchedule()
       }).catch((error) => {
         console.log(error)
       })
@@ -186,6 +227,7 @@ export default {
         start: start,
         end: end
       }).then((response) => {
+        console.log(response)
         let today = new Date()
         if (today > new Date(self.dates[1].date)) {
           // if (response.data !== 'No PBP available') {
@@ -233,6 +275,7 @@ export default {
         })
     },
     getYahooOwnership: function () {
+      console.log(this.store.league)
       let teamKeys = this.store.league.standings.map(team => {
         return team.team_key
       })
@@ -240,6 +283,7 @@ export default {
         team_key: teamKeys,
         subresources: ['ownership']
       }).then(response => {
+        console.log(response)
         let teams = response.data
         let players = teams.map(team => {
           return team.players.map(player => {
@@ -276,9 +320,9 @@ export default {
     }
   },
   mounted() {
-    this.getCurrentSeason()
     this.getMatchups()
-    this.getYahooOwnership()
+    this.getCurrentSchedule()
+    // this.getYahooOwnership()
     // Check if the season data is saved
   }
 }

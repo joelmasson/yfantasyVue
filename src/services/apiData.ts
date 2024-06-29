@@ -271,7 +271,6 @@ export async function getWeekRoster(
   let startingLineupPromise = dates.map((date) => {
     let day = new Date(date);
     day = day.toISOString();
-    console.log(day);
     return Axios.post("/api/yahoo/roster/players", {
       team_key: game_id + ".l." + league_id + ".t." + team_id,
       date: day,
@@ -330,6 +329,14 @@ export async function getWeekRoster(
               player.starting.push({
                 date: dates[i],
                 position: dayPlayer[0].selected_position,
+                gamePk: "",
+                status: null,
+                sos: 0,
+              });
+            } else {
+              player.starting.push({
+                date: dates[i],
+                position: "",
                 gamePk: "",
                 status: null,
                 sos: 0,

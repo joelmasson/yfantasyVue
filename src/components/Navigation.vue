@@ -12,6 +12,8 @@ export default {
     },
     computed: {
         team() {
+            console.log(this.route)
+            console.log(this.store)
             return this.store.getTeam(this.route.params.team_id)
         }
     }
@@ -39,7 +41,7 @@ export default {
                 :to="{ name: 'League', game_id: route.params.game_id }">{{ store.league.name
                 }}</router-link>
             <router-link class="text-sm font-semibold leading-6 text-gray-900" v-if="route.params.team_id"
-                :to="{ name: 'Team', game_id: route.params.game_id, team_id: route.params.team_id }">{{
+                :to="{ name: 'Team', game_id: route?.params?.game_id, team_id: route?.params?.team_id }">{{
                     team.name }}</router-link>
         </div>
         <div class="hidden lg:flex lg:flex-1 lg:justify-end">
@@ -77,7 +79,7 @@ export default {
                         <router-link
                             class="-mx-3 block rounded-lg py-2 px-3 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
                             v-if="route.params.team_id"
-                            :to="{ name: 'Team', game_id: route.params.game_id, team_id: route.params.team_id }">{{
+                            :to="{ name: 'Team', game_id: route?.params?.game_id, team_id: route?.params?.team_id }">{{
                                 team.name }}</router-link>
                     </div>
                     <div class="py-6">

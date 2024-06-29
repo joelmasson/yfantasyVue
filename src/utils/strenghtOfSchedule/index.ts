@@ -1,4 +1,5 @@
 type Game = {
+  [x: string]: any;
   gameDate: Date;
   gamePK: number;
   gameType: string;
@@ -32,41 +33,43 @@ type Team = {
 };
 
 type Standing = {
+  [x: string]: any;
+  teamAbbrev: any;
   team: {
     id: number;
   };
-  pointsPercentage: number;
+  pointPctg: number;
 };
 
 export default function gameSOS(
-  opponent: number,
+  opponent: String,
   games: [Game],
   standings: [Standing]
 ) {
   // Get Opponent's Schedule
   let opponentSchedule = games.filter((game) => {
-    if (game?.teams?.home?.team.id === opponent) {
+    if (game.homeTeam.abbrev === opponent) {
       return game;
-    } else if (game?.teams?.away?.team.id === opponent) {
+    } else if (game?.awayTeam.abbrev === opponent) {
       return game;
     }
   });
   // Get Opponent's Opponents Record
-  let allOpponents = opponentSchedule.map((game) => {
-    if (game?.teams?.home?.team.id === opponent) {
-      return game?.teams?.away?.team.id;
-    } else if (game?.teams?.away?.team.id === opponent) {
-      return game?.teams?.home?.team.id;
+  let allOpponentsAbbrev = opponentSchedule.map((game) => {
+    if (game.homeTeam.abbrev === opponent) {
+      return game?.awayTeam.abbrev;
+    } else if (game?.awayTeam.abbrev === opponent) {
+      return game.homeTeam.abbrev;
     }
   });
   let OOR: number = standings
     .filter((team) => {
-      if (allOpponents.includes(team.team.id)) {
+      if (allOpponentsAbbrev.includes(team.teamAbbrev.default)) {
         return team;
       }
     })
     .map((team) => {
-      return team.pointsPercentage;
+      return team.pointPctg;
     })
     .reduce((accumulator: number, currentValue: number) => {
       return (accumulator + currentValue) / 2;
@@ -74,12 +77,12 @@ export default function gameSOS(
 
   let opponentRecord: number = standings
     .filter((team) => {
-      if (opponent === team.team.id) {
+      if (opponent === team.teamAbbrev.default) {
         return team;
       }
     })
     .map((team) => {
-      return team.pointsPercentage;
+      return team.pointPctg;
     })[0];
-  return (2 * opponentRecord + OOR / allOpponents.length) / 3;
+  return (2 * opponentRecord + OOR / allOpponentsAbbrev.length) / 3;
 }

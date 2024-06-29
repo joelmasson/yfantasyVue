@@ -1,5 +1,6 @@
 <template>
   <router-link
+    v-if="store"
     :to="{ name: 'Team', params: { game_id: $route.params.game_id, league_id: $route.params.league_id, team_id: team.team_id, week_num: store.league.current_week } }">
     <div class="flex items-center">
       <div class="flex-shrink-0 h-10 w-10">
@@ -29,7 +30,6 @@ export default {
   setup() {
     const route = useRoute()
     const store = useStore()
-
     return { store, route }
   },
   computed: {

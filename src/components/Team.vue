@@ -2,7 +2,7 @@
   <div class="bg-white shadow-md rounded-lg">
     <Replacements :teamGames="teamGames" :schedule="games" :dates="gameDay" @addPlayer="addPlayer">
     </Replacements>
-    <WeekProjections :settings="store.league.settings.stat_categories" :players="players" :schedule="games"
+    <WeekProjections v-if="byeWeek" :settings="store.league.settings.stat_categories" :players="players" :schedule="games"
       :scoreboard="scoreboard" :team_id="route.params.team_id"></WeekProjections>
     <div class="flex justify-start md:justify-center">
       <div class="w-14"></div>
@@ -45,10 +45,10 @@ export default {
     let scoreboard = ref(null)
     let gameDay = ref([])
     let players = ref([])
-    let standings =ref({})
+    let standings = ref({})
     let games = ref({})
     let teamGames = ref({})
-    let roster = ref([{ position: "C", count: 2 }, { position: "RW", count: 2 }, { position: "LW", count: 2 }, { position: "D", count: 4 }, { position: "Util", count: 1 }, { position: "G", count: 2 }],)
+    let roster = ref([{ position: "C", count: 2 }, { position: "RW", count: 2 }, { position: "LW", count: 2 }, { position: "D", count: 4 }, { position: "Util", count: 1 }, { position: "G", count: 2 }])
     let emptyRoster = ref(roster.value.flatMap(position => {
       let spot = {
         name: '',
@@ -99,7 +99,7 @@ export default {
             }
           })
         })
-        // playerAverages()
+        playerAverages()
         // getWeekSchedule()
       })
       // let startingLineupPromise = gameDay.value.map(date => {
@@ -160,7 +160,7 @@ export default {
         return 0
       }
       // Get all games
-      Axios.get('/api/schedule/'+scoreboard.value[0].week_start).then((response) => {
+      Axios.get('/api/schedule/' + scoreboard.value[0].week_start).then((response) => {
         console.log(response)
         let gameData = response.data.gameWeek.flatMap(date => {
           return date.games
@@ -331,10 +331,10 @@ export default {
       availableSpots.value = gameDays
     }
     function playerAverages() {
-      let playerNames = [...players.value].map(player => player.name.full)
-      let lastGameDayPlayed = games.value.findLast(game => game.gameState === 'OFF')
-      lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(games.value[0].gamePk) - 1 : lastGameDayPlayed
-      getPlayerAverages({ name: playerNames }, 3, 'GAME_SCORE', parseInt(store.league.season + '020000'), lastGameDayPlayed, true).then(response => {
+      let player_keys = [...players.value].map(player => player.player_key)
+      console.log(player_keys)
+      getPlayerAverages(player_keys).then(response => {
+        console.log(response)
         players.value = [...players.value].map(player => {
           let returnedPlayer = response.filter(APIPlayer => {
             if (player.name.full === APIPlayer.name) {
@@ -342,8 +342,12 @@ export default {
             }
           })[0]
           if (returnedPlayer !== undefined) {
-            player.averages = returnedPlayer.averages
-            player.previousGames = returnedPlayer.previousGames
+            if (player.stats.coverage_type === 'season') {
+              let numOfGames = player.stats.find((stat) => stat.stat_id === "0");
+              player.averages = player.stats.map((stat) => {
+                return {stat_id:stat.stat_id, value: stat.value / numOfGames}
+              })
+            }
           }
           return player
         })
@@ -420,8 +424,14 @@ export default {
       let today = new Date()
       return today.toISOString().split('T')[0]
     },
+    byeWeek: function () {
+      return this.scoreboard?.find(matchup => {
+        if (matchup.teams[0].team_id === this.route.params.team_id || matchup.teams[1].team_id === this.route.params.team_id) {
+          return true
+        }
+      })
+    },
     projectedPlayers: function () {
-      console.log(this.players, this.players.length)
       if (this.players.length === 0 || this.players.length === undefined) {
         return []
       }

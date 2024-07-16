@@ -45,7 +45,7 @@ export default {
             Axios.post('/api/yahoo/players/leagues', {
                 league_key: '427.l.11426',
             // league_keys: self.route.game_id + '.l.' + self.route.league_id,
-            filter: {status:'A',sort:'AR'},
+            filter: {status:'A',sort:'AR', sort_type:'average_season'},
             subresources: 'stats'
         })
             .then((response) => {

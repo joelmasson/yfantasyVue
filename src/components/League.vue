@@ -168,9 +168,9 @@ export default {
                   return date.date
                 }
               })
-              if (self.dates.length > 0) {
-                self.getExtenalPlayByPlay(self.dates[0].date, self.dates[self.dates.length - 1].date)
-              }
+              // if (self.dates.length > 0) {
+              //   self.getExtenalPlayByPlay(self.dates[0].date, self.dates[self.dates.length - 1].date)
+              // }
             }
           }
         }).catch((error) => {

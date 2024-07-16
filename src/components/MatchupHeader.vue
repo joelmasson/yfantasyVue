@@ -31,10 +31,9 @@ export default {
   props: ['matchup', 'gameDays', 'games', 'teams', 'NHLStandings', 'projections'],
   methods: {
     score: (teamID, matchup) => {
-      console.log()
       let ID = teamID
       let score = matchup.stat_winners.filter(team => {
-        if (ID === team.stat_winner.winner_team_key) {
+        if (ID === team.winner_team_key) {
           return team
         }
       })

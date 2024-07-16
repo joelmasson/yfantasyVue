@@ -46,7 +46,8 @@ export const useStore = defineStore("main", {
     async getProjections() {
       let dates = gameDays(
         this.league.scoreboard.matchups[0].week_start,
-        this.league.scoreboard.matchups[0].week_end
+        this.league.scoreboard.matchups[0].week_end,
+        true
       );
       if (this.projections.length === 0) {
         let dailyProjectionPromise = dates.map((day) => {

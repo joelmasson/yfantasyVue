@@ -16,8 +16,8 @@
           </router-link> -->
         </div>
         <div class="border-t border-gray-200">
-          <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" v-for="(leagues, i) in game.leagues" :key="i">
-            <router-link :to="{ name:'League', params: {game_id: game.game_id, league_id:league.league_id}}" v-for="league in leagues" :key="league.leauge_id" :id="league.league_id">
+          <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" v-for="(league, i) in game.leagues" :key="i">
+            <router-link :to="{ name:'League', params: {game_id: game.game_id, league_id:league.league_id}}" :key="league.league_id" :id="league.league_id">
               <div class="flex-shrink-0 h-10 w-10">
                 <img class="h-10 w-10 rounded-full" :src="league.logo_url" :alt="league.name">
               </div>

@@ -1,6 +1,9 @@
 <template>
   <div>
-    <DashboardCard v-for="game in games" :key="game.game_id" :game="game"></DashboardCard>
+    <div v-for="game in games" :key="game.game_id">
+      <DashboardCard v-if="game.leagues" :game="game"/>
+    </div>
+    <!-- <DashboardCard v-for="game in games" :key="game.game_id" :game="game"/> -->
     <!-- <h2>Other Teams</h2>
     <ul  v-if="inactiveGames.length >= 1">
       <DashboardCard v-for="game in inactiveGames" :key="game.game_id" :game="game"></DashboardCard>
@@ -69,6 +72,7 @@ export default {
       axios
         .post('/api/yahoo/user/game_leagues', {game_key: ids.slice(ids.length - 9)})
         .then((response) => {
+          console.log(response)
           self.games = response.data.games.reverse()
         })
         .catch((errors) => {

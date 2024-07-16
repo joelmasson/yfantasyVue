@@ -29,10 +29,6 @@
           </p>
         </div>
       </div>
-      <div role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
-    Tooltip content
-    <div class="tooltip-arrow" data-popper-arrow></div>
-</div>
     </div>
   </div>
 </template>
@@ -59,7 +55,7 @@ export default {
   components: { Profile },
   methods: {
     rating: (day) => {
-      if(day.position === 'BN'){x
+      if(day.position === 'BN'){
         return 'opacity-50'
       }
       // if (sos === null) {

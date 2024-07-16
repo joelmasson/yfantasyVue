@@ -200,44 +200,18 @@ interface unknownQuery {
  * @returns
  */
 export async function getPlayerAverages(
-  matchData: unknownQuery,
-  numberOfGames: number,
-  sortBy: string,
-  start: number,
-  end: number,
-  stats: boolean
+  players: [string],
 ) {
-  let queryObj: unknownQuery = {};
-  for (var key in matchData) {
-    if (!queryObj.hasOwnProperty(key)) {
-      queryObj[key] = { $in: matchData[key] };
-    }
-  }
-  let season = start.toString().slice(0, 4) + "020000";
-  // console.log(
-  //   JSON.stringify({
-  //     data: queryObj,
-  //     statType: "averages",
-  //     sortBy: sortBy,
-  //     limit: numberOfGames,
-  //     season: parseInt(season),
-  //     start: start,
-  //     end: end,
-  //     stats: stats,
-  //   })
-  // );
+
   try {
-    const { data, status } = await Axios.post<PlayerGameAverages>(
-      "/api/players",
+    const { data, status } = await Axios.post(
+      "/api/yahoo/players/fetch",
       {
-        data: queryObj,
-        statType: "averages",
-        sortBy: sortBy,
-        limit: numberOfGames,
-        season: parseInt(season),
-        start: start,
-        end: end,
-        stats: stats,
+        player_keys: players,
+        // filter: {
+        //   type: 'season_average'
+        // },
+        subresources: ["stats"],
       }
     );
     return data;
@@ -268,14 +242,16 @@ export async function getWeekRoster(
   /* -----
         Get all roster players and the days where they are starting from Yahoo
       ---- */
-  let startingLineupPromise = dates.map((date) => {
-    let day = new Date(date);
+  let startingLineupPromise = dates.map((_date) => {
+    let day = new Date(_date as string);
     day = day.toISOString();
     return Axios.post("/api/yahoo/roster/players", {
       team_key: game_id + ".l." + league_id + ".t." + team_id,
-      date: day,
+      date: _date,
+      subresources: ["stats"],
     })
       .then((response) => {
+        console.log(response)
         return response.data.roster;
       })
       .catch((error) => {
@@ -283,11 +259,13 @@ export async function getWeekRoster(
       });
   });
   try {
+    console.log({dates})
     const data = Promise.allSettled(startingLineupPromise).then(
       (response: unknownQuery) => {
+        console.log({response});
         let roster = new Set();
         response.forEach((day) => {
-          day.value.forEach((player) => {
+          day.value?.forEach((player) => {
             if (roster.size === 0) {
               roster.add({
                 ...player,
@@ -317,32 +295,34 @@ export async function getWeekRoster(
           });
         });
         response.forEach((day, i) => {
-          roster.forEach((player) => {
-            let dayPlayer = day.value.filter(
-              (gamePlayer: { player_id: any }) => {
-                if (gamePlayer.player_id === player.player_id) {
-                  return gamePlayer;
+          if (day.value) {
+            roster.forEach((player) => {
+              let dayPlayer = day.value.filter(
+                (gamePlayer: { player_id: any }) => {
+                  if (gamePlayer.player_id === player.player_id) {
+                    return gamePlayer;
+                  }
                 }
+              );
+              if (dayPlayer.length > 0) {
+                player.starting.push({
+                  date: dates[i],
+                  position: dayPlayer[0].selected_position,
+                  gamePk: "",
+                  status: null,
+                  sos: 0,
+                });
+              } else {
+                player.starting.push({
+                  date: dates[i],
+                  position: "",
+                  gamePk: "",
+                  status: null,
+                  sos: 0,
+                });
               }
-            );
-            if (dayPlayer.length > 0) {
-              player.starting.push({
-                date: dates[i],
-                position: dayPlayer[0].selected_position,
-                gamePk: "",
-                status: null,
-                sos: 0,
-              });
-            } else {
-              player.starting.push({
-                date: dates[i],
-                position: "",
-                gamePk: "",
-                status: null,
-                sos: 0,
-              });
-            }
-          });
+            });
+          }
         });
         return roster;
       }

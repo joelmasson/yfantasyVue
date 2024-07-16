@@ -120,7 +120,7 @@ export function AverageStatByOpposition(
   });
 }
 
-export function gameDays(start: string, end: string) {
+export function gameDays(start: string, end: string, abbrv: boolean) {
   function convertDate(date: Date) {
     var months = [
       "JAN",
@@ -141,8 +141,11 @@ export function gameDays(start: string, end: string) {
     var dd = date.getDate().toString();
 
     var ddChars = dd.split("");
-
-    return yyyy + "-" + months[mm] + "-" + (ddChars[1] ? dd : "0" + ddChars[0]);
+    if (abbrv) {
+      return yyyy + "-" + months[mm] + "-" + (ddChars[1] ? dd : "0" + ddChars[0]);
+    } else {
+      return yyyy + "-" + mm + "-" + (ddChars[1] ? dd : "0" + ddChars[0]);
+    }
   }
   function getDates(start: Date, end: Date) {
     let arr = [];

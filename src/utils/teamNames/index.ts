@@ -106,6 +106,8 @@ export function teamNamesAbv(name: string) {
       return "TOR";
     case "Toronto St. Patricks":
       return "TSP";
+    case "Utah Hockey Club":
+      return "UTA";
     case "Vancouver Canucks":
       return "VAN";
     case "Vegas Golden Knights":

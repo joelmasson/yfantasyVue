@@ -72,7 +72,7 @@ export default {
   setup() {
     const route = useRoute()
     const store = useStore()
-    store.getProjections(gameDays(store.league.scoreboard.matchups[0].week_start, store.league.scoreboard.matchups[0].week_end))
+    // store.getProjections(gameDays(store.league.scoreboard.matchups[0].week_start, store.league.scoreboard.matchups[0].week_end))
     return { store, route }
   },
   data() {
@@ -100,15 +100,15 @@ export default {
         this.players = data
         this.games.forEach(game => {
           this.players.forEach(player => {
-            if (player.editorial_team_full_name === game.teams.away.team.name || player.editorial_team_full_name === game.teams.home.team.name) {
-              player.starting.forEach(gameDay => {
-                if (standardizeDate(gameDay.date) === standardizeDate(game.gameDate)) {
-                  gameDay.game_id = game.gamePk
-                  gameDay.status = game.status.detailedState
-                  if (player.editorial_team_full_name === game.teams.away.team.name) {
-                    gameDay.sos = game.teams.away.sos
-                  } else if (player.editorial_team_full_name === game.teams.home.team.name) {
-                    gameDay.sos = game.teams.home.sos
+            if (player.editorial_team_abbr === game.awayTeam.abbrev || player.editorial_team_abbr === game.homeTeam.abbrev) {
+              player.starting.forEach(playerStartingDay => {
+                if (standardizeDate(playerStartingDay.date) === standardizeDate(game.startTimeUTC)) {
+                  playerStartingDay.game_id = game.gamePk
+                  playerStartingDay.status = game.gameState
+                  if (player.editorial_team_abbr === game.awayTeam.abbrev) {
+                    playerStartingDay.sos = game.awayTeam.sos
+                  } else if (player.editorial_team_abbr === game.homeTeam.abbrev) {
+                    playerStartingDay.sos = game.homeTeam.sos
                   }
                 }
               })
@@ -211,7 +211,7 @@ export default {
       let self = this;
       console.log(this.players)
       let playerNames = [...this.players].map(player => player.name.full)
-      let lastGameDayPlayed = this.games.findLast(game => game.status.detailedState === 'Final')
+      let lastGameDayPlayed = this.games.findLast(game => game.gameState === 'OFF')
       let games = toRaw(this.games)
       lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(games[0].gamePk) - 1 : lastGameDayPlayed
       getPlayerAverages({ name: playerNames }, 82, 'GAME_SCORE', parseInt(this.store.league.season + '020000'), lastGameDayPlayed, true).then(response => {

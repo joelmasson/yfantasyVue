@@ -1,13 +1,10 @@
-
 <template>
   <section>
     <MatchupHeader :projections="true" :gameDays="gameDays" :games="games" :matchup="matchup"
-      :NHLStandings="NHLStandings">
-    </MatchupHeader>
-    <Calender :dates="gameDays"></Calender>
+      :NHLStandings="NHLStandings" />
+    <Calender :dates="gameDays" />
     <div v-if="games.length > 0" v-for="team in matchup.teams">
-      <MatchupTeam :gameDays="gameDays" :games="games" :team_id="team.team_id" @roster="getRoster">
-      </MatchupTeam>
+      <MatchupTeam :gameDays="gameDays" :games="games" :team_id="team.team_id" @roster="getRoster" />
     </div>
   </section>
 </template>
@@ -20,7 +17,7 @@ import MatchupHeader from './MatchupHeader.vue'
 import MatchupTeam from './matchup/matchup-team.vue'
 
 import gameSOS from '../utils/strenghtOfSchedule'
-import { APINHLStandings } from '../services/statsapi'
+import { APINHLStandings, APINHLSchedule } from '../services/nhl/nhlAPI'
 
 // ui
 import SelectFilter from './ui/SelectFilter.vue'
@@ -50,22 +47,20 @@ export default {
   methods: {
     getWeekGames: function () {
       let self = this
-      Axios.get('https://statsapi.web.nhl.com/api/v1/schedule?startDate=' + this.store.league.scoreboard.matchups[0].week_start + '&endDate=' + this.store.league.scoreboard.matchups[0].week_end).then((response) => {
-        let games = response.data.dates.flatMap(date => {
+      APINHLSchedule(this.matchup.week_start).then((response) => {
+        let games = response.data.gameWeek.flatMap(date => {
           return date.games
         })
         self.games = games.map(game => {
-          game.teams.away.sos = gameSOS(game.teams.away.team.id, games, self.NHLStandings)
-          game.teams.home.sos = gameSOS(game.teams.home.team.id, games, self.NHLStandings)
+          game.awayTeam.sos = gameSOS(game.awayTeam.id, games, self.NHLStandings)
+          game.homeTeam.sos = gameSOS(game.homeTeam.id, games, self.NHLStandings)
           return game
         })
       })
     },
     getNHLStandings: function () {
-      let standingsData = APINHLStandings().then(response => {
-        this.NHLStandings = response.data.records.flatMap(date => {
-          return date.teamRecords
-        })
+      APINHLStandings('now').then(response => {
+        this.NHLStandings = response.data.standings
         this.getWeekGames()
       });
     },
@@ -93,15 +88,12 @@ export default {
       let today = new Date()
       while (strDate < end) {
         strDate = dateMove
-        let numericDay = '0' + strDate.getDate()
-        numericDay = numericDay.slice(-2)
-        let date = {
+        dates.push({
           'DOW': strDate.toString().substring(0, 3),
           'Num': strDate.getDate(),
           'today': strDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0),
-          'date': strDate.getFullYear() + '-' + [strDate.getMonth() + 1] + '-' + numericDay
-        }
-        dates.push(date)
+          'date': new Date(strDate).toISOString().split('T')[0]
+        })
         dateMove.setDate(dateMove.getDate() + 1)
       };
       return dates

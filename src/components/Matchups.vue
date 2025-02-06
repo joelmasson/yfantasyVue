@@ -11,13 +11,12 @@
     </ul>
     <ul class="flex flex-col items-center" v-if="league.scoreboard">
       <li v-for="(matchup, i) in league.scoreboard.matchups" :key="i" class="grid grid-cols-2">
-        <!-- <router-link
-                :to="{ name: 'Matchup', params: { game_id: $route.params.game_id, league_id: $route.params.league_id, week_num: matchup.week, matchup: matchup.teams[0].team_id + '-' + matchup.teams[1].team_id } }"> -->
-        <MatchupHeader :matchup="matchup" :projections="false"></MatchupHeader>
-        <!-- </router-link> -->
+        <router-link
+          :to="{ name: 'Matchup', params: { game_id: $route.params.game_id, league_id: $route.params.league_id, week_num: matchup.week, matchup: matchup.teams[0].team_id + '-' + matchup.teams[1].team_id } }">
+          <MatchupHeader :matchup="matchup" :projections="false"></MatchupHeader>
+        </router-link>
       </li>
     </ul>
-
   </section>
 </template>
 <script>

@@ -181,7 +181,7 @@ export default {
       return PlayersProjection([this.player], this.categories).map(stat => stat.value)
     },
     playerStats: function () {
-      let lastGameDayPlayed = games.value.findLast(game => game.status.detailedState === 'Final')
+      let lastGameDayPlayed = games.value.findLast(game => game.status.gameState === 'OFF')
       lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(games.value[0].gamePk) - 1 : lastGameDayPlayed
       return
     }

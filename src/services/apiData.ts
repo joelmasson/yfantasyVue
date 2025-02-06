@@ -1,4 +1,5 @@
 import Axios from "axios";
+import { stat } from "fs";
 
 type Game = {
   HIT: number;
@@ -199,22 +200,29 @@ interface unknownQuery {
  * @param stats Return the players's previous stats
  * @returns
  */
-export async function getPlayerAverages(
-  players: [string],
-) {
-
+export async function getPlayerAverages(players: [string]) {
   try {
-    const { data, status } = await Axios.post(
-      "/api/yahoo/players/fetch",
-      {
-        player_keys: players,
-        // filter: {
-        //   type: 'season_average'
-        // },
-        subresources: ["stats"],
-      }
-    );
-    return data;
+    const { data, status } = await Axios.post("/api/yahoo/players/fetch", {
+      player_keys: players,
+      subresources: ["stats"],
+    });
+    let dataResponse = data.map((player: any) => {
+      let numberOfGames = player.stats.stats.find(
+        (stat: { stat_id: string }) => stat.stat_id === "0"
+      );
+      return {
+        ...player,
+        averageStats: player.stats.stats.map(
+          (stats: { stat_id: any; value: number }) => {
+            return {
+              stat: stats.stat_id,
+              value: stats.value / numberOfGames.value,
+            };
+          }
+        ),
+      };
+    });
+    return dataResponse;
   } catch (error) {
     if (Axios.isAxiosError(error)) {
       console.log("error message: ", error.message);
@@ -242,16 +250,23 @@ export async function getWeekRoster(
   /* -----
         Get all roster players and the days where they are starting from Yahoo
       ---- */
+  console.log(dates);
   let startingLineupPromise = dates.map((_date) => {
+    // console.log(_date);
     let day = new Date(_date as string);
-    day = day.toISOString();
+    // console.log({
+    //   team_key: game_id + ".l." + league_id + ".t." + team_id,
+    //   date: _date,
+    //   subresources: ["stats"],
+    // });
+    const dayISOString = day.toISOString();
     return Axios.post("/api/yahoo/roster/players", {
       team_key: game_id + ".l." + league_id + ".t." + team_id,
       date: _date,
       subresources: ["stats"],
     })
       .then((response) => {
-        console.log(response)
+        console.log(response);
         return response.data.roster;
       })
       .catch((error) => {
@@ -259,13 +274,11 @@ export async function getWeekRoster(
       });
   });
   try {
-    console.log({dates})
     const data = Promise.allSettled(startingLineupPromise).then(
       (response: unknownQuery) => {
-        console.log({response});
         let roster = new Set();
-        response.forEach((day) => {
-          day.value?.forEach((player) => {
+        response.forEach((day: { value: any[] }) => {
+          day.value?.forEach((player: unknown) => {
             if (roster.size === 0) {
               roster.add({
                 ...player,
@@ -273,7 +286,6 @@ export async function getWeekRoster(
                 previousGames: [],
                 selected: true,
                 starting: [],
-                stats: [],
               });
             } else {
               let RP = [...roster].find((rosteredPlayer) => {
@@ -288,13 +300,12 @@ export async function getWeekRoster(
                   previousGames: [],
                   selected: true,
                   starting: [],
-                  stats: [],
                 });
               }
             }
           });
         });
-        response.forEach((day, i) => {
+        response.forEach((day: { value: any[] }, i: string | number) => {
           if (day.value) {
             roster.forEach((player) => {
               let dayPlayer = day.value.filter(
@@ -311,6 +322,7 @@ export async function getWeekRoster(
                   gamePk: "",
                   status: null,
                   sos: 0,
+                  stats: dayPlayer[0].player_stats.stats,
                 });
               } else {
                 player.starting.push({

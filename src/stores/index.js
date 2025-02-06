@@ -11,7 +11,6 @@ import { APINHLStandings } from "../services/statsapi";
 export const useStore = defineStore("main", {
   actions: {
     async getYahooLeague(game_id, league_id) {
-      console.log('yahoo')
       if (
         this.league.edit_key === undefined ||
         new Date(this.league.edit_key) < new Date()
@@ -113,14 +112,19 @@ export const useStore = defineStore("main", {
     },
     async fetchNHLStandings(date) {
       try {
-        Axios.get('/api/standings/' + date).then((response) => {
-          this.standings = response.data.standings
+        Axios.get("/api/standings/" + date).then((response) => {
+          this.standings = response.data.standings;
         });
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
     },
-    async pullNHLSchedule() { },
+    async pullNHLSchedule() {},
+    async fetchWeekSchedule() {
+      Axios.get("/api/schedule").then((response) => {
+        this.weekSchedule = response.data.gameWeek;
+      });
+    },
   },
   state: () => ({
     league: useStorage("league", {}),
@@ -132,6 +136,7 @@ export const useStore = defineStore("main", {
     }),
     NHL: useStorage("NHL", {}),
     standings: useStorage("standings", {}),
+    weekSchedule: useStorage("weekSchedule", []),
     // TODO save NHL Team data
   }),
   getters: {
@@ -169,15 +174,17 @@ export const useStore = defineStore("main", {
       return state.replacements;
     },
     getTeam: (state) => (id) => {
-      return state.league.standings
-        .find((team) => {
-          if (team.team_id === id) {
-            return team;
-          }
-        })
+      return state.league.standings.find((team) => {
+        if (team.team_id === id) {
+          return team;
+        }
+      });
     },
     getNHLStandings: (state) => () => {
       return state.standings;
+    },
+    getWeekSchedule: (state) => () => {
+      return state.weekSchedule;
     },
   },
   mutations: {
@@ -194,6 +201,9 @@ export const useStore = defineStore("main", {
     },
     updateReplacements(state, data) {
       state.replacements = data;
-    }
+    },
+    setWeekSchedule(state, data) {
+      state.weekSchedule = data;
+    },
   },
 });

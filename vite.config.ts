@@ -22,7 +22,7 @@ export default defineConfig({
     },
     hmr: {
       clientPort: 443,
-      host: "f3f0-2605-b100-e003-3f94-516f-631a-2fef-a083.ngrok-free.app",
+      host: "elect-adapted-star-refrigerator.trycloudflare.com",
     },
     watch: {
       usePolling: true,

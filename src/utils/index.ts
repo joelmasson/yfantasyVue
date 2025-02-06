@@ -137,12 +137,18 @@ export function gameDays(start: string, end: string, abbrv: boolean) {
       "DEC",
     ];
     var yyyy = date.getFullYear().toString();
-    var mm = date.getMonth();
+    var mm = (date.getMonth() + 1).toString().padStart(2, "0");
     var dd = date.getDate().toString();
 
     var ddChars = dd.split("");
     if (abbrv) {
-      return yyyy + "-" + months[mm] + "-" + (ddChars[1] ? dd : "0" + ddChars[0]);
+      return (
+        yyyy +
+        "-" +
+        months[parseInt(mm) - 1] +
+        "-" +
+        (ddChars[1] ? dd : "0" + ddChars[0])
+      );
     } else {
       return yyyy + "-" + mm + "-" + (ddChars[1] ? dd : "0" + ddChars[0]);
     }
@@ -165,7 +171,7 @@ export function gameDays(start: string, end: string, abbrv: boolean) {
 export function StatLine(categories: StatCategories, stats: Stats) {
   return categories.map((category) => {
     return stats.find((stat) => {
-      if (category.stat_id === parseInt(stat.stat_id)) {
+      if (category.stat_id === parseInt(stat.stat_id.toString())) {
         return stat;
       }
     });
@@ -177,12 +183,13 @@ export function PlayersProjection(players: Array<any>, categories: Array<any>) {
     let value = [...players]
       .map((player) => {
         let playerStats = player.starting
-          .filter((day) => day.game_id !== "")
-          .map((match) => {
+          .filter((day: { game_id: string }) => day.game_id !== "")
+          .map((match: { status: string; gamePk: any; sos: number }) => {
             // Loop over each day in the week
             if (match.status === "Final") {
               let gameStats = player?.previousGames?.filter(
-                (previousGame) => previousGame.gamePk === match.gamePk
+                (previousGame: { gamePk: any }) =>
+                  previousGame.gamePk === match.gamePk
               )[0];
               if (gameStats !== undefined) {
                 let statValue = YahooCategoryToAPIStat(stat.name, gameStats);
@@ -211,7 +218,7 @@ export function PlayersProjection(players: Array<any>, categories: Array<any>) {
               return statValue * (1 - match.sos);
             }
           });
-        let ps = playerStats.reduce((a, b) => {
+        let ps = playerStats.reduce((a: any, b: any) => {
           return a + b;
         }, 0);
         return ps;

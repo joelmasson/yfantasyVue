@@ -71,42 +71,35 @@ export default {
             })
         },
         projectedStats: function () {
-            console.log(this.players)
             let players = toRaw(this.players)
-            console.log(players)
             let stats = this.settings.map(stat => {
                 if (this.schedule === undefined || Object.keys(players).length === 0 || this.schedule.length === 0) {
                     return { name: stat.name, value: 0 }
                 }
+
                 let value = players.map(player => {
-                    let playerStats = player.starting.filter(day => day.gamePk !== '').map(match => { // Loop over each day in the week
-                        if (match.status === 'Final') {
-                            let gameStats = player.previousGames.filter(previousGame => previousGame.gamePk === match.gamePk)[0]
-                            if (gameStats !== undefined) {
-                                let statValue = YahooCategoryToAPIStat(stat.name, gameStats)
-                                if (isNaN(statValue) || statValue === undefined || statValue === null) {
-                                    statValue = 0
-                                }
-                                return statValue
-                            }
-                            return 0
-                        } else if (match.status === 'Scheduled') {
-                            let statValue = YahooCategoryToAPIStat(stat.name, player.averages)
-                            if (isNaN(statValue) || statValue === undefined || statValue === null) {
-                                statValue = 0
-                            }
-                            return statValue * (1 - match.sos)
+                    let playerStats = player.starting.map((match) => { // Loop over each day in the week
+                        // let gameStat = match.stats.filter((matchStat) => matchStat.stat_id === stat.stat_id.toString())
+                        let averagedStat = player.averages.find((a) => a.stat === stat.stat_id.toString())
+                        // game has been played
+                        // if (gameStat.length > 0 && gameStat[0].value !== '-') {
+                        //     return parseFloat(gameStat[0].value)
+                        // } else 
+                        if (match.gamePk > 0 && averagedStat?.value) {
+                            return parseFloat(averagedStat.value)
                         } else {
                             return 0
                         }
+
                     })
                     let ps = playerStats.reduce((a, b) => {
                         return a + b
                     }, 0)
 
                     return ps
-                }).reduce((a, b) => a + b, 0).toFixed(2)
-
+                }).reduce((a, b) => {
+                    return a + b
+                }, 0).toFixed(2)
                 return { name: stat.name, value: value }
             })
             return stats

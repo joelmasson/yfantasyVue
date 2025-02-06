@@ -4,6 +4,7 @@ type Game = {
   gamePK: number;
   gameType: string;
   season: string;
+  gameState: "OFF" | "FUT";
   status: {
     abstractGameState: string;
     codedGameState: string;

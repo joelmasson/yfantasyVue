@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-for="game in games" :key="game.game_id">
-      <DashboardCard v-if="game.leagues" :game="game"/>
+      <DashboardCard v-if="game.leagues" :game="game" />
     </div>
     <!-- <DashboardCard v-for="game in games" :key="game.game_id" :game="game"/> -->
     <!-- <h2>Other Teams</h2>
@@ -9,7 +9,7 @@
       <DashboardCard v-for="game in inactiveGames" :key="game.game_id" :game="game"></DashboardCard>
     </ul>
     <h3 v-else>Sorry you have no inactive or favourtited Teams</h3> -->
-   </div>
+  </div>
 </template>
 <script>
 import axios from 'axios'
@@ -18,7 +18,7 @@ import DashboardCard from './DashboardCard.vue'
 
 export default {
   name: 'Dashboard',
-  data () {
+  data() {
     return {
       games: [],
       leagues: [],
@@ -26,7 +26,7 @@ export default {
       showInactive: false
     }
   },
-  components: {DashboardCard},
+  components: { DashboardCard },
   methods: {
     setGamesKeys: function () {
       let self = this
@@ -53,7 +53,7 @@ export default {
             if (flag) {
               flag.game_keys.push(game.game_key)
             } else {
-              leagues.push({'name': game.name, 'game_keys': [game.game_key]})
+              leagues.push({ 'name': game.name, 'game_keys': [game.game_key] })
             }
           })
           // self.setGamesKeys(leagues)
@@ -70,7 +70,7 @@ export default {
     getUserInactivesTeams: function (ids) {
       let self = this
       axios
-        .post('/api/yahoo/user/game_leagues', {game_key: ids.slice(ids.length - 9)})
+        .post('/api/yahoo/user/game_leagues', { game_key: ids.slice(ids.length - 9) })
         .then((response) => {
           console.log(response)
           self.games = response.data.games.reverse()
@@ -80,7 +80,7 @@ export default {
         })
     }
   },
-  mounted () {
+  mounted() {
     // this.getUsersCurrentTeams()
     this.getUserAllGames()
   }

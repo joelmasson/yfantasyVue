@@ -69,10 +69,10 @@ import standardizeDate from '../../utils/standardizeDate'
 
 export default {
   name: 'MatchupTeam',
+  emits: ['roster'],
   setup() {
     const route = useRoute()
     const store = useStore()
-    // store.getProjections(gameDays(store.league.scoreboard.matchups[0].week_start, store.league.scoreboard.matchups[0].week_end))
     return { store, route }
   },
   data() {
@@ -97,9 +97,9 @@ export default {
     getStartingLineup() {
       let dates = this.gameDays.map(day => day.date)
       getWeekRoster(dates, this.game_id, this.league_id, this.team_id).then(data => {
-        this.players = data
+        let players = data
         this.games.forEach(game => {
-          this.players.forEach(player => {
+          players.forEach(player => {
             if (player.editorial_team_abbr === game.awayTeam.abbrev || player.editorial_team_abbr === game.homeTeam.abbrev) {
               player.starting.forEach(playerStartingDay => {
                 if (standardizeDate(playerStartingDay.date) === standardizeDate(game.startTimeUTC)) {
@@ -115,113 +115,117 @@ export default {
             }
           })
         })
-        this.setRoster()
-        this.getPlayerStats()
-        this.playerAverages()
+        // this.getPlayerStats()
+        this.playerAverages(players)
       })
     },
-    getPlayerStats: function () {
-      let self = this
-      let playerIds = [...this.players].map(player => {
-        return player.player_key
-      })
-      Axios.post('/api/yahoo/players/fetch', {
-        player_keys: playerIds,
-        subresources: ['stats']
-      }).then((response) => {
-        self.players.forEach(player => {
-          player.stats = response.data.find(playerStat => playerStat.player_id === player.player_id)?.stats
-        })
-      }).catch((error) => {
-        console.log('error', error)
-      })
-    },
-    getProjections() {
-      let self = this
-      let totals = []
-      this.gameDays.forEach(date => {
-        getDailyProjection(date).then((day) => {
-          let projectedPlayers = day.filter(player => {
-            let players = self.players.some(currentPlayer => {
-              if (currentPlayer.name.full === player.Name) {
-                return currentPlayer;
-              }
-            })
-            if (players) {
-              return players
-            }
-          })
-          self.players.map(currentPlayer => {
-            let player = projectedPlayers.filter(player => {
-              if (player.Name === currentPlayer.name.full) {
-                return player
-              }
-            })
-            if (player.length > 0) {
-              player = player.map(player => {
-                player.PowerPlayPoints = player.PowerPlayAssists + player.PowerPlayGoals
-                if (player.Games === 1) {
-                  player.GoaltendingSavePercentage = player.GoaltendingSaves / (player.GoaltendingSaves + player.GoaltendingGoalsAgainst)
-                  player.GoaltendingGoalsAgainstAverage = player.GoaltendingGoalsAgainst
-                }
-                return player
-              })
-              if (currentPlayer.projections === undefined) {
-                currentPlayer.projections = [player[0]]
-              } else {
-                currentPlayer.projections.push(player[0])
-              }
-            }
-            return currentPlayer
-          })
-          // PROJECTED TOTALS
-          projectedPlayers.forEach(player => {
-            let stats = Object.keys(player)
-            let value = Object.values(player)
-            stats.forEach((stat, i) => {
-              self.store.league.settings.stat_categories.forEach(cat => {
-                if (statIdToProjection(cat.stat_id.toString()) === stat) {
-                  if (totals[stat] === undefined) {
-                    totals[stat] = 0
-                  }
-                  if (typeof value[i] !== 'string' || !value[i] instanceof String) {
-                    totals[stat] += value[i]
-                  }
-                }
-              })
-            })
-          })
-          self.projectionsTotals = self.store.league.settings.stat_categories.map(cat => {
-            let projectedStat = Object.keys(totals).filter(stat => {
-              if (statIdToProjection(cat.stat_id.toString()) === stat) {
-                return totals[stat]
-              }
-            }).map(stat => {
-              return totals[stat]
-            })[0]
-            return {
-              'display_name': cat.display_name,
-              'value': projectedStat === undefined ? 0 : projectedStat
-            }
-          })
-        })
-      })
-    },
-    playerAverages() {
+    // getPlayerStats: function () {
+    //   let self = this
+    //   let playerIds = [...this.players].map(player => {
+    //     return player.player_key
+    //   })
+    //   Axios.post('/api/yahoo/players/fetch', {
+    //     player_keys: playerIds,
+    //     subresources: ['stats']
+    //   }).then((response) => {
+    //     self.players.forEach(player => {
+    //       player.stats = response.data.find(playerStat => playerStat.player_id === player.player_id)?.stats
+    //     })
+    //   }).catch((error) => {
+    //     console.log('error', error)
+    //   })
+    // },
+    // getProjections() {
+    //   let self = this
+    //   let totals = []
+    //   this.gameDays.forEach(date => {
+    //     getDailyProjection(date).then((day) => {
+    //       let projectedPlayers = day.filter(player => {
+    //         let players = self.players.some(currentPlayer => {
+    //           if (currentPlayer.name.full === player.Name) {
+    //             return currentPlayer;
+    //           }
+    //         })
+    //         if (players) {
+    //           return players
+    //         }
+    //       })
+    //       self.players.map(currentPlayer => {
+    //         let player = projectedPlayers.filter(player => {
+    //           if (player.Name === currentPlayer.name.full) {
+    //             return player
+    //           }
+    //         })
+    //         if (player.length > 0) {
+    //           player = player.map(player => {
+    //             player.PowerPlayPoints = player.PowerPlayAssists + player.PowerPlayGoals
+    //             if (player.Games === 1) {
+    //               player.GoaltendingSavePercentage = player.GoaltendingSaves / (player.GoaltendingSaves + player.GoaltendingGoalsAgainst)
+    //               player.GoaltendingGoalsAgainstAverage = player.GoaltendingGoalsAgainst
+    //             }
+    //             return player
+    //           })
+    //           if (currentPlayer.projections === undefined) {
+    //             currentPlayer.projections = [player[0]]
+    //           } else {
+    //             currentPlayer.projections.push(player[0])
+    //           }
+    //         }
+    //         return currentPlayer
+    //       })
+    //       // PROJECTED TOTALS
+    //       projectedPlayers.forEach(player => {
+    //         let stats = Object.keys(player)
+    //         let value = Object.values(player)
+    //         stats.forEach((stat, i) => {
+    //           self.store.league.settings.stat_categories.forEach(cat => {
+    //             if (statIdToProjection(cat.stat_id.toString()) === stat) {
+    //               if (totals[stat] === undefined) {
+    //                 totals[stat] = 0
+    //               }
+    //               if (typeof value[i] !== 'string' || !value[i] instanceof String) {
+    //                 totals[stat] += value[i]
+    //               }
+    //             }
+    //           })
+    //         })
+    //       })
+    //       self.projectionsTotals = self.store.league.settings.stat_categories.map(cat => {
+    //         let projectedStat = Object.keys(totals).filter(stat => {
+    //           if (statIdToProjection(cat.stat_id.toString()) === stat) {
+    //             return totals[stat]
+    //           }
+    //         }).map(stat => {
+    //           return totals[stat]
+    //         })[0]
+    //         return {
+    //           'display_name': cat.display_name,
+    //           'value': projectedStat === undefined ? 0 : projectedStat
+    //         }
+    //       })
+    //     })
+    //   })
+    // },
+    playerAverages(players) {
       let self = this;
-      console.log(this.players)
-      let playerNames = [...this.players].map(player => player.name.full)
-      let lastGameDayPlayed = this.games.findLast(game => game.gameState === 'OFF')
+      let playerKeys = [...players].map(player => player.player_key)
+      // let lastGameDayPlayed = this.games.findLast(game => game.gameState === 'OFF')
       let games = toRaw(this.games)
-      lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(games[0].gamePk) - 1 : lastGameDayPlayed
-      getPlayerAverages({ name: playerNames }, 82, 'GAME_SCORE', parseInt(this.store.league.season + '020000'), lastGameDayPlayed, true).then(response => {
-        self.players.forEach(player => {
-          let playerData = response.find(averagedStatline => player.name.full === averagedStatline.name)
-          player.averages = playerData?.averages
-          player.previousGames = playerData?.previousGames
+      // console.log(players, playerKeys, lastGameDayPlayed, games)
+      // lastGameDayPlayed = lastGameDayPlayed === undefined ? parseInt(games[0].gamePk) - 1 : lastGameDayPlayed
+      getPlayerAverages(playerKeys).then(response => {
+        self.players = [...players].map(player => {
+          let playerAverages = response.filter(playerAverage => playerAverage.player_id === player.player_id)
+          if (playerAverages.length > 0) {
+            player.averages = playerAverages[0].averageStats
+            player.player_stats = playerAverages[0].stats
+          }
+          return player
         })
         this.$emit('roster', { team_id: this.team_id, players: self.players })
+        this.setRoster()
       })
+
     },
     setRoster: function () {
       let positions = Array.from(

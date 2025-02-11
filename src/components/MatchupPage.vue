@@ -31,7 +31,6 @@ export default {
   setup() {
     const route = useRoute()
     const store = useStore()
-
     return { store, route }
   },
   data() {
@@ -65,7 +64,7 @@ export default {
       });
     },
     getRoster: function (playerData) {
-      console.log(playerData)
+      console.log({ playerData })
       this.matchup.teams.forEach(team => {
         if (playerData.team_id === team.team_id) {
           team.players = playerData.players
@@ -75,6 +74,9 @@ export default {
     getMatch: function () {
       let homeId = this.$route.params.matchup.split('-')[0]
       this.matchup = this.store.getMatch(homeId)
+    },
+    getDailyProjection: function () {
+      this.store.requestProjections(this.matchup.week_start, this.matchup.week_end);
     }
   },
   computed: {
@@ -102,7 +104,7 @@ export default {
   mounted() {
     this.getNHLStandings()
     this.getMatch()
-    // this.getTeamPlayers()
+    this.getDailyProjection()
   }
 }
 </script>

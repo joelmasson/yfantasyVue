@@ -26,6 +26,7 @@
   </tr>
 </template>
 <script>
+import { toRaw } from 'vue';
 import { useStore } from '../stores/index.js'
 import { statIdToProjection, YahooCategoryToAPIStat } from '../utils/index'
 import standardizeDate from '../utils/standardizeDate'
@@ -43,34 +44,37 @@ export default {
   computed: {
     statLine: function () {
       let self = this
-      let statLine = this.player.stats?.stats?.filter(validStat => this.store.league.settings.stat_categories.find(category => category.stat_id === parseInt(validStat.stat_id))).map(scoringStat => {
-        let statName = statIdToProjection(scoringStat.stat_id)
-        let playerStats = this.player.starting.filter(day => day.game_id !== '').map(match => {
-          if (match.status === 'Final') {
-            let gameStats = this.player?.previousGames?.filter(previousGame => previousGame.gamePk === match.game_id)[0]
-            if (gameStats !== undefined) {
-              let statValue = YahooCategoryToAPIStat(statName, gameStats)
-              if (isNaN(statValue) || statValue === undefined || statValue === null) {
-                statValue = 0
-              }
-              return statValue
-            }
-            return 0
-          } else {
-            let statValue = YahooCategoryToAPIStat(statName, this.player.averages)
-            if (isNaN(statValue) || statValue === undefined || statValue === null) {
-              statValue = 0
-            }
-            return statValue * (1 - match.sos)
-          }
-          return statValue
+      let projections = this.store.projections.flatMap((day) => {
+        return day.value.data.filter((player) => {
+          return player.Name === self.player.name.full
         })
-        let ps = playerStats.reduce((a, b) => {
+      });
+      let statLine = this.player.player_stats?.stats?.filter(validStat => this.store.league.settings.stat_categories.find(category => category.stat_id === parseInt(validStat.stat_id))).map(scoringStat => {
+        let statName = statIdToProjection(scoringStat.stat_id)
+        let averageStat = toRaw(self.player.averages).filter((average) => {
+          return average.stat === scoringStat.stat_id
+        })
+        let projectedStat = projections.filter((projection) => projection.Games === 1).map(projection => {
+          if (statName === 'PowerPlayPoints') {
+            return projection['PowerPlayGoals'] + projection['PowerPlayAssists']
+          }
+          if (statName === 'GameWinningGoals') {
+            return 0
+          }
+          if (statName === 'GoaltendingGoalsAgainstAverage') {
+            return (projection['GoaltendingGoalsAgainst'] * 60) / 58
+          }
+          if (statName === 'GoaltendingSavePercentage') {
+            return projection['GoaltendingSaves'] / projection['GoaltendingShotsAgainst']
+          }
+          return projection[statName]
+        })
+        let ps = projectedStat.reduce((a, b) => {
           return a + b
         }, 0)
         let statValueRounded = Math.round((ps + Number.EPSILON) * 100) / 100
-        let averageStat = YahooCategoryToAPIStat(statName, self.player.averages)?.toFixed(2)
-        return { ...scoringStat, projected: statValueRounded, average: averageStat }
+
+        return { ...scoringStat, projected: statValueRounded, average: averageStat[0].value.toFixed(2) }
       })
       return statLine
     }

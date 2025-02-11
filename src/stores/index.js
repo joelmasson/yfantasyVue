@@ -5,7 +5,7 @@ import { gameDays } from "../utils/index";
 import Axios from "axios";
 
 import getDailyProjection from "../services/sportsData";
-import { getPlayerAverages } from "../services/apiData";
+import { getPlayerAverages, getYahooPlayersLeague } from "../services/apiData";
 import { APINHLStandings } from "../services/statsapi";
 
 export const useStore = defineStore("main", {
@@ -29,54 +29,60 @@ export const useStore = defineStore("main", {
       }
     },
     async getYahooScoreBoard(league_key, week) {
-      console.log("called");
       return await Axios.post("/api/yahoo/league/scoreboard", {
         league_keys: league_key,
         week: week,
       })
         .then((response) => {
-          console.log(response);
-          return response;
+          return response.data;
         })
         .catch((error) => {
           console.log("error", error);
         });
     },
-    async getProjections() {
+    async requestProjections() {
       let dates = gameDays(
         this.league.scoreboard.matchups[0].week_start,
         this.league.scoreboard.matchups[0].week_end,
         true
       );
-      if (this.projections.length === 0) {
+      console.log(dates);
+      if (this.projections[0]?.value.data === undefined) {
         let dailyProjectionPromise = dates.map((day) => {
           return getDailyProjection(day);
         });
         Promise.allSettled(dailyProjectionPromise).then((response) => {
+          console.log(response);
           if (response[0].value === "Request failed with status code 403") {
             this.projections = "Out of call volume quota.";
           } else {
-            let days = response
-              .filter((day) => {
-                if (day.value.length > 0) {
-                  return day;
-                }
-              })
-              .map((day) => {
-                return {
-                  date: day.value[0].Day,
-                  players: day.value.map((player) => {
-                    return {
-                      name: player.Name,
-                      team: player.Team,
-                      positon: player.YahooPosition,
-                    };
-                  }),
-                };
-              });
-            this.projections = days;
+            this.projections = response;
           }
         });
+      } else {
+        return this.projections;
+      }
+    },
+    async getTakenPlayers(league_key, start) {
+      console.log(this.hasAllTakenPlayers, this.takenPlayers.length, start);
+      if (!this.hasAllTakenPlayers) {
+        getYahooPlayersLeague(league_key, {
+          status: "T",
+          start: start,
+        }).then((response) => {
+          console.log(response);
+          let players = response.players.flatMap((player) => {
+            return player.name.full;
+          });
+          this.takenPlayers.push(...players);
+          if (response.players.length === 25) {
+            this.getTakenPlayers(league_key, response.players.length);
+          } else {
+            this.hasAllTakenPlayers = true;
+          }
+        });
+      } else {
+        return this.takenPlayers;
       }
     },
     async getPlayersWithXGamesLeft(
@@ -111,12 +117,21 @@ export const useStore = defineStore("main", {
       });
     },
     async fetchNHLStandings(date) {
-      try {
-        Axios.get("/api/standings/" + date).then((response) => {
-          this.standings = response.data.standings;
-        });
-      } catch (error) {
-        console.log(error);
+      if (this.standings.length === 0) {
+        try {
+          let response = await Axios.get("/api/standings/" + date);
+          this.standings = response.data.standings.map((team) => {
+            return {
+              gamesPlayed: team.gamesPlayed,
+              teamAbbrev: team.teamAbbrev,
+              pointPctg: team.pointPctg,
+            };
+          });
+        } catch (error) {
+          console.log(error);
+        }
+      } else {
+        return this.standings;
       }
     },
     async pullNHLSchedule() {},
@@ -137,6 +152,8 @@ export const useStore = defineStore("main", {
     NHL: useStorage("NHL", {}),
     standings: useStorage("standings", {}),
     weekSchedule: useStorage("weekSchedule", []),
+    takenPlayers: useStorage("takenPlayers", []),
+    hasAllTakenPlayers: useStorage("hasAllTakenPlayers", false),
     // TODO save NHL Team data
   }),
   getters: {
@@ -165,7 +182,7 @@ export const useStore = defineStore("main", {
       return state.league.scoreboard.matchups.filter((match) => {
         return match.teams.some((team) => {
           if (team.team_id === id) {
-            return match;
+            return { ...match, players: [] };
           }
         });
       })[0];
@@ -185,6 +202,9 @@ export const useStore = defineStore("main", {
     },
     getWeekSchedule: (state) => () => {
       return state.weekSchedule;
+    },
+    getProjections: (state) => () => {
+      return state.projections;
     },
   },
   mutations: {

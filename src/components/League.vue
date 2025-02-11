@@ -17,6 +17,7 @@ export default {
     const route = useRoute()
     const store = useStore()
     store.getYahooLeague(route.params.game_id, route.params.league_id)
+    store.getTakenPlayers(route.params.game_id + '.l.' + route.params.league_id, 0)
     store.fetchNHLStandings('now')
     return { store, route }
   },
@@ -124,7 +125,6 @@ export default {
       let self = this
       Axios.get('/api/schedule/now')
         .then((response) => {
-          console.log(response)
           self.currentSchedule = response.data
           self.games = response.data.gameWeek
         })

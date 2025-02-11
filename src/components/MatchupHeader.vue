@@ -3,10 +3,10 @@
     style="grid-template-columns: 0fr 0fr;" :style="i === 1 ? 'direction:rtl;' : ''">
     <TeamProfile :team="team"></TeamProfile>
     <span class="mx-4">{{ score(team.team_key, matchup) }}</span>
-    <!-- <MatchupProjectionWeek v-if="projections" :settings="store.league.settings.stat_categories" :players="team.players"
-      :schedule="games" :scoreboard="store.league.scoreboard.matchups" :team_id="team.team_id"
+    <MatchupProjectionWeek v-if="projections && team.players" :settings="store.league.settings.stat_categories"
+      :players="team.players" :schedule="games" :scoreboard="store.league.scoreboard.matchups" :team_id="team.team_id"
       :NHLStandings="NHLStandings">
-    </MatchupProjectionWeek> -->
+    </MatchupProjectionWeek>
   </div>
 </template>
 <script>
@@ -32,6 +32,9 @@ export default {
   methods: {
     score: (teamID, matchup) => {
       let ID = teamID
+      if (matchup.status === 'preevent') {
+        return 0
+      }
       let score = matchup.stat_winners.filter(team => {
         if (ID === team.winner_team_key) {
           return team

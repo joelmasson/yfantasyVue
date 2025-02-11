@@ -22,7 +22,7 @@ export default defineConfig({
     },
     hmr: {
       clientPort: 443,
-      host: "elect-adapted-star-refrigerator.trycloudflare.com",
+      host: "increase-governor-chat-sentences.trycloudflare.com",
     },
     watch: {
       usePolling: true,

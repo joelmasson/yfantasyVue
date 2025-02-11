@@ -190,9 +190,31 @@ type names = [string];
 interface unknownQuery {
   [key: string]: any;
 }
+
+type Postition = "C" | "LW" | "RW" | "D" | "G";
+type OwnershipStatus = "A" | "FA" | "W" | "T" | "K";
+
+type Filters = {
+  position: Postition;
+  status: OwnershipStatus;
+  search: string;
+  sort: string;
+  sort_type: string;
+  sort_season: number;
+  sort_week: number;
+  start: number;
+  count: number;
+};
+
+type Subresources = [
+  "stats"?,
+  "ownership"?,
+  "percent_owned"?,
+  "draft_analysis"?
+];
+
 /**
  *
- * @param matchData Values that match player attributes eg. {name:[list,of,names]}
  * @param numberOfGames Number of games that are averaged
  * @param sortBy Which value the players should be sorted by
  * @param start Start game number for the previous games
@@ -200,10 +222,10 @@ interface unknownQuery {
  * @param stats Return the players's previous stats
  * @returns
  */
-export async function getPlayerAverages(players: [string]) {
+export async function getPlayerAverages(player_keys: [string]) {
   try {
     const { data, status } = await Axios.post("/api/yahoo/players/fetch", {
-      player_keys: players,
+      player_keys: player_keys,
       subresources: ["stats"],
     });
     let dataResponse = data.map((player: any) => {
@@ -250,7 +272,6 @@ export async function getWeekRoster(
   /* -----
         Get all roster players and the days where they are starting from Yahoo
       ---- */
-  console.log(dates);
   let startingLineupPromise = dates.map((_date) => {
     // console.log(_date);
     let day = new Date(_date as string);
@@ -266,7 +287,6 @@ export async function getWeekRoster(
       subresources: ["stats"],
     })
       .then((response) => {
-        console.log(response);
         return response.data.roster;
       })
       .catch((error) => {
@@ -369,6 +389,30 @@ export async function getPlayerStats(
       }
     );
     return data;
+  } catch (error) {
+    if (Axios.isAxiosError(error)) {
+      console.log("error message: ", error.message);
+      return error.message;
+    } else {
+      console.log("unexpected error: ", error);
+      return "An unexpected error occurred";
+    }
+  }
+}
+
+export async function getYahooPlayersLeague(
+  league_keys: [string],
+  filters: Filters,
+  subresources: Subresources
+) {
+  try {
+    const { data, status } = await Axios.post("/api/yahoo/players/leagues", {
+      league_keys: league_keys,
+      filters: JSON.stringify(filters),
+      subresources: subresources,
+    });
+    if (data.error) console.log(data);
+    return data[0];
   } catch (error) {
     if (Axios.isAxiosError(error)) {
       console.log("error message: ", error.message);
